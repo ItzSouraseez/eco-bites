@@ -50,7 +50,7 @@ function DatasetContent() {
             <li>Upload an image showing the product name and brand</li>
             <li>Upload an image of the nutrition facts label</li>
             <li>Click "Contribute Product" - our AI will extract the information</li>
-            <li>The product will be saved to our shared database for all users</li>
+            <li>Your contribution will be reviewed by an admin before being added to the database</li>
           </ol>
         </div>
 

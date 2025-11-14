@@ -239,10 +239,10 @@ export default function DatasetForm({ onSuccess, onCancel }) {
         verified: false,
       };
 
-      // Save to shared/public collection
-      await addDoc(collection(db, 'sharedProducts'), datasetEntry);
+      // Save to pendingProducts collection for admin approval
+      await addDoc(collection(db, 'pendingProducts'), datasetEntry);
 
-      showToast('Product contributed successfully! Thank you for your contribution.', 'success');
+      showToast('Product submitted successfully! It will be reviewed by an admin before being added to the database.', 'success');
       
       // Reset form
       setProductImage(null);
