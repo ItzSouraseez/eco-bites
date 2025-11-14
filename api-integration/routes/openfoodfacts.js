@@ -39,7 +39,12 @@ router.get("/product/:barcode", async (req, res) => {
   try {
     const response = await fetch(url);
     const data = await response.json();
-    res.json(data); // return raw API response
+
+    // use formatter to clean result
+    const product = data.product;
+    const cleaned = formatProduct(product);
+    res.json(cleaned);
+
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch product data" });
   }
