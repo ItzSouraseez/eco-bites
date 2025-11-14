@@ -7,6 +7,7 @@ import CameraCapture from '@/components/CameraCapture';
 import NutritionDisplay from '@/components/NutritionDisplay';
 import ScoreBadge from '@/components/ScoreBadge';
 import UserMenu from '@/components/UserMenu';
+import ScoreInfo from '@/components/ScoreInfo';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
@@ -117,35 +118,46 @@ function ScannerContent() {
   };
 
   return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      <div className="min-h-screen bg-white">
         <div className="container mx-auto px-4 py-8 max-w-4xl">
           {/* Header */}
           <header className="mb-8">
             <div className="flex justify-between items-center mb-4">
-              <Link
-                href="/dataset"
-                className="inline-flex items-center gap-2 px-4 py-2 text-green-600 hover:text-green-700 dark:text-green-400 font-semibold rounded-2xl hover:bg-green-50 dark:hover:bg-green-900/20 transition-all duration-300"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
-                </svg>
-                Contribute to our Database
-              </Link>
+              <div className="flex gap-3">
+                <Link
+                  href="/dataset"
+                  className="inline-flex items-center gap-2 px-4 py-2 text-yellow-600 hover:text-yellow-700 font-semibold rounded-2xl hover:bg-yellow-50 transition-all duration-300"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                  </svg>
+                  Contribute
+                </Link>
+                <Link
+                  href="/profile"
+                  className="inline-flex items-center gap-2 px-4 py-2 text-yellow-600 hover:text-yellow-700 font-semibold rounded-2xl hover:bg-yellow-50 transition-all duration-300"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  Profile
+                </Link>
+              </div>
               <UserMenu />
             </div>
             <div className="text-center">
-              <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-2 bg-clip-text text-transparent bg-gradient-to-r from-green-600 to-blue-600">
+              <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-2 bg-clip-text text-transparent bg-gradient-to-r from-yellow-500 to-black">
                 EcoBites
               </h1>
-              <p className="text-lg text-gray-600 dark:text-gray-400">
+              <p className="text-lg text-gray-600">
                 Dig deep into nutritional facts.
               </p>
             </div>
           </header>
 
         {/* Image Upload Section */}
-        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-3xl shadow-xl border border-white/30 dark:border-gray-700/50 p-6 mb-6">
-          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
+        <div className="bg-white rounded-3xl shadow-xl border border-gray-200 p-6 mb-6">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-4">
             Upload or Capture Food Product
           </h2>
           
@@ -160,7 +172,7 @@ function ScannerContent() {
               <button
                 onClick={handleAnalyze}
                 disabled={loading}
-                className="flex-1 px-6 py-3.5 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-2xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 disabled:transform-none"
+                className="flex-1 px-6 py-3.5 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 disabled:from-gray-400 disabled:to-gray-500 text-black rounded-2xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 disabled:transform-none"
               >
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
@@ -177,7 +189,7 @@ function ScannerContent() {
               <button
                 onClick={handleReset}
                 disabled={loading}
-                className="px-6 py-3.5 bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200/50 dark:border-gray-600/50 text-gray-800 dark:text-white rounded-2xl font-semibold transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105 active:scale-95"
+                className="px-6 py-3.5 bg-white hover:bg-gray-50 border border-gray-200 text-gray-800 rounded-2xl font-semibold transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105 active:scale-95"
               >
                 Reset
               </button>
@@ -187,8 +199,8 @@ function ScannerContent() {
 
         {/* Error Display */}
         {error && (
-          <div className="bg-red-50/80 dark:bg-red-900/30 backdrop-blur-sm border border-red-200/50 dark:border-red-800/50 rounded-2xl p-4 mb-6">
-            <p className="text-red-800 dark:text-red-200 flex items-center gap-2">
+          <div className="bg-red-50 backdrop-blur-sm border border-red-200/50 rounded-2xl p-4 mb-6">
+            <p className="text-red-800 flex items-center gap-2">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -199,30 +211,36 @@ function ScannerContent() {
 
         {/* Results Display */}
         {nutritionData && (
-          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-3xl shadow-xl border border-white/30 dark:border-gray-700/50 p-6 space-y-6">
+          <div className="bg-white rounded-3xl shadow-xl border border-gray-200 p-6 space-y-6">
             <div className="flex justify-between items-start">
               <div>
-                <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                <h2 className="text-3xl font-bold text-gray-900 mb-2">
                   {nutritionData.name || 'Unknown Product'}
                 </h2>
                 {nutritionData.brand && (
-                  <p className="text-lg text-gray-600 dark:text-gray-400">
+                  <p className="text-lg text-gray-600">
                     {nutritionData.brand}
                   </p>
                 )}
               </div>
-              <div className="flex gap-2">
-                {nutritionData.nutriScore && (
-                  <ScoreBadge score={nutritionData.nutriScore} label="Nutri" size="lg" />
-                )}
-                {nutritionData.ecoScore && (
-                  <ScoreBadge score={nutritionData.ecoScore} label="Eco" size="lg" />
-                )}
-              </div>
+                    <div className="flex gap-2 items-center">
+                      {nutritionData.nutriScore && (
+                        <div className="flex items-center gap-2">
+                          <ScoreBadge score={nutritionData.nutriScore} label="Nutri" size="lg" />
+                          <ScoreInfo type="nutri" />
+                        </div>
+                      )}
+                      {nutritionData.ecoScore && (
+                        <div className="flex items-center gap-2">
+                          <ScoreBadge score={nutritionData.ecoScore} label="Eco" size="lg" />
+                          <ScoreInfo type="eco" />
+                        </div>
+                      )}
+                    </div>
             </div>
 
             {nutritionData.description && (
-              <p className="text-gray-700 dark:text-gray-300">
+              <p className="text-gray-700">
                 {nutritionData.description}
               </p>
             )}
@@ -230,7 +248,7 @@ function ScannerContent() {
             {/* Nutrition Display */}
             {nutritionData.nutrition && (
               <div>
-                <h3 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
+                <h3 className="text-2xl font-semibold text-gray-900 mb-4">
                   Nutrition Profile (per 100g)
                 </h3>
                 <NutritionDisplay nutrition={nutritionData.nutrition} />
@@ -240,10 +258,10 @@ function ScannerContent() {
             {/* Ingredients */}
             {nutritionData.ingredients && (
               <div>
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
                   Ingredients
                 </h3>
-                <p className="text-gray-700 dark:text-gray-300">
+                <p className="text-gray-700">
                   {nutritionData.ingredients}
                 </p>
               </div>
@@ -252,14 +270,14 @@ function ScannerContent() {
             {/* Allergens */}
             {nutritionData.allergens && nutritionData.allergens.length > 0 && (
               <div>
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
                   Allergens
                 </h3>
                 <div className="flex flex-wrap gap-2">
                   {nutritionData.allergens.map((allergen, index) => (
                     <span
                       key={index}
-                      className="px-3 py-1 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 rounded-full text-sm"
+                      className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm"
                     >
                       {allergen}
                     </span>
@@ -271,14 +289,14 @@ function ScannerContent() {
             {/* Packaging */}
             {nutritionData.packaging && nutritionData.packaging.length > 0 && (
               <div>
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
                   Packaging
                 </h3>
                 <div className="flex flex-wrap gap-2">
                   {nutritionData.packaging.map((pack, index) => (
                     <span
                       key={index}
-                      className="px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full text-sm"
+                      className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm"
                     >
                       {pack}
                     </span>

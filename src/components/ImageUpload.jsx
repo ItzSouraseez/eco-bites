@@ -60,7 +60,7 @@ export default function ImageUpload({ imagePreview, onImageSelect, onImageCaptur
     <div className="w-full space-y-4">
       {/* Upload Area */}
       <div
-        className="border-2 border-dashed border-gray-300/50 dark:border-gray-700/50 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-3xl p-8 text-center hover:border-green-500/80 dark:hover:border-green-600/80 hover:bg-white/70 dark:hover:bg-gray-800/70 transition-all duration-300 cursor-pointer"
+        className="border-2 border-dashed border-gray-300/50 dark:border-gray-700/50 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-3xl p-8 text-center hover:border-yellow-500/80 dark:hover:border-yellow-600/80 hover:bg-white/70 dark:hover:bg-gray-800/70 transition-all duration-300 cursor-pointer"
         onDragOver={handleDragOver}
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
@@ -122,7 +122,7 @@ export default function ImageUpload({ imagePreview, onImageSelect, onImageCaptur
         type="button"
         onClick={handleCameraClick}
         disabled={!!imagePreview}
-        className="w-full inline-flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed text-white rounded-2xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 disabled:transform-none disabled:opacity-60"
+        className="w-full inline-flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed text-black rounded-2xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 disabled:transform-none disabled:opacity-60"
       >
         <svg
           className="w-6 h-6"

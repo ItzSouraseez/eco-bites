@@ -44,8 +44,8 @@ export default function NutritionDisplay({ nutrition }) {
             <Radar
               name="Nutrition"
               dataKey="value"
-              stroke="#10b981"
-              fill="#10b981"
+              stroke="#eab308"
+              fill="#eab308"
               fillOpacity={0.6}
               strokeWidth={2}
             />

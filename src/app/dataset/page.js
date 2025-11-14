@@ -15,38 +15,49 @@ function DatasetContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <div className="min-h-screen bg-white">
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         {/* Header */}
         <header className="mb-8">
-          <div className="flex justify-between items-center mb-4">
-            <Link
-              href="/scanner"
-              className="inline-flex items-center gap-2 px-4 py-2 text-green-600 hover:text-green-700 dark:text-green-400 font-semibold rounded-2xl hover:bg-green-50 dark:hover:bg-green-900/20 transition-all duration-300"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              Back to Scanner
-            </Link>
-            <UserMenu />
-          </div>
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex gap-3">
+                <Link
+                  href="/scanner"
+                  className="inline-flex items-center gap-2 px-4 py-2 text-yellow-600 hover:text-yellow-700 font-semibold rounded-2xl hover:bg-yellow-50 transition-all duration-300"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                  </svg>
+                  Back to Scanner
+                </Link>
+                <Link
+                  href="/profile"
+                  className="inline-flex items-center gap-2 px-4 py-2 text-yellow-600 hover:text-yellow-700 font-semibold rounded-2xl hover:bg-yellow-50 transition-all duration-300"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  Profile
+                </Link>
+              </div>
+              <UserMenu />
+            </div>
           <div className="text-center">
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-2 bg-clip-text text-transparent bg-gradient-to-r from-green-600 to-blue-600">
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-2 bg-clip-text text-transparent bg-gradient-to-r from-yellow-500 to-black">
               Contribute to our Database
             </h1>
-            <p className="text-lg text-gray-600 dark:text-gray-400">
+            <p className="text-lg text-gray-600">
               Help build a community-driven nutrition database for everyone
             </p>
           </div>
         </header>
 
         {/* Instructions */}
-        <div className="bg-blue-50/80 dark:bg-blue-900/30 backdrop-blur-sm border border-blue-200/50 dark:border-blue-800/50 rounded-2xl p-6 mb-6">
-          <h2 className="text-lg font-semibold text-blue-900 dark:text-blue-200 mb-2">
+        <div className="bg-yellow-50 backdrop-blur-sm border border-yellow-200/50 rounded-2xl p-6 mb-6">
+          <h2 className="text-lg font-semibold text-yellow-900 mb-2">
             How to add a product:
           </h2>
-          <ol className="list-decimal list-inside space-y-2 text-blue-800 dark:text-blue-300 text-sm">
+          <ol className="list-decimal list-inside space-y-2 text-yellow-800 text-sm">
             <li>Upload an image showing the product name and brand</li>
             <li>Upload an image of the nutrition facts label</li>
             <li>Click "Contribute Product" - our AI will extract the information</li>
@@ -66,7 +77,7 @@ function DatasetContent() {
           <div className="text-center py-8">
             <button
               onClick={() => setShowForm(true)}
-              className="px-8 py-4 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-2xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
+              className="px-8 py-4 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-black rounded-2xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
             >
               Add Another Product
             </button>

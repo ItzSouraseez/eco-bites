@@ -6,6 +6,7 @@ import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import CameraCapture from '@/components/CameraCapture';
 import Toast from '@/components/Toast';
+import ScoreInfo from '@/components/ScoreInfo';
 
 export default function DatasetForm({ onSuccess, onCancel }) {
   const { user } = useAuth();
@@ -92,6 +93,14 @@ export default function DatasetForm({ onSuccess, onCancel }) {
   const handleNutritionCameraCapture = (file) => {
     handleImageFile(file, 'nutrition');
     setShowNutritionCamera(false);
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
   const extractDataFromImages = async () => {
@@ -272,14 +281,27 @@ export default function DatasetForm({ onSuccess, onCancel }) {
     setNutritionImage(null);
     setProductPreview(null);
     setNutritionPreview(null);
-    setError(null);
-    setSuccess(false);
+    setFormData({
+      productName: '',
+      brand: '',
+      energy: '',
+      fat: '',
+      sugars: '',
+      salt: '',
+      protein: '',
+      fiber: '',
+      sodium: '',
+      ingredients: '',
+      allergens: '',
+      nutriScore: 'A',
+      ecoScore: 'B',
+    });
   };
 
   if (!user) {
     return (
-      <div className="bg-yellow-50/80 dark:bg-yellow-900/30 backdrop-blur-sm border border-yellow-200/50 dark:border-yellow-800/50 rounded-2xl p-6">
-        <p className="text-yellow-800 dark:text-yellow-200 flex items-center gap-2">
+      <div className="bg-yellow-50 backdrop-blur-sm border border-yellow-200/50 rounded-2xl p-6">
+        <p className="text-yellow-800 flex items-center gap-2">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
@@ -291,20 +313,20 @@ export default function DatasetForm({ onSuccess, onCancel }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-3xl shadow-xl border border-white/30 dark:border-gray-700/50 p-6">
-        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+      <div className="bg-white rounded-3xl shadow-xl border border-gray-200 p-6">
+        <h3 className="text-xl font-semibold text-gray-900 mb-4">
           Contribute Product to Database
         </h3>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+        <p className="text-sm text-gray-600 mb-6">
           Upload two images: one showing the product name, and another showing the nutrition facts label.
         </p>
 
         {/* Product Image Upload */}
         <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
             Product Image (showing product name)
           </label>
-          <div className="border-2 border-dashed border-gray-300/50 dark:border-gray-700/50 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-3xl p-6 text-center hover:border-green-500/80 dark:hover:border-green-600/80 hover:bg-white/70 dark:hover:bg-gray-800/70 transition-all duration-300">
+          <div className="border-2 border-dashed border-gray-300/50 bg-white/50 backdrop-blur-sm rounded-3xl p-6 text-center hover:border-yellow-500/80 hover:bg-white/70 transition-all duration-300">
             <input
               type="file"
               accept="image/*"
@@ -321,9 +343,9 @@ export default function DatasetForm({ onSuccess, onCancel }) {
                   <img
                     src={productPreview}
                     alt="Product preview"
-                    className="max-h-48 mx-auto rounded-2xl object-contain shadow-xl border border-white/30 dark:border-gray-700/30"
+                    className="max-h-48 mx-auto rounded-2xl object-contain shadow-xl border border-gray-200"
                   />
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <p className="text-sm text-gray-600">
                     Click to change image
                   </p>
                 </div>
@@ -342,7 +364,7 @@ export default function DatasetForm({ onSuccess, onCancel }) {
                       d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
                     />
                   </svg>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <p className="text-sm text-gray-600">
                     Click to upload product image
                   </p>
                 </div>
@@ -354,7 +376,7 @@ export default function DatasetForm({ onSuccess, onCancel }) {
             type="button"
             onClick={() => setShowProductCamera(true)}
             disabled={!!productPreview}
-            className="mt-3 w-full inline-flex items-center justify-center gap-3 px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed text-white rounded-2xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 disabled:transform-none disabled:opacity-60"
+            className="mt-3 w-full inline-flex items-center justify-center gap-3 px-6 py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed text-black rounded-2xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 disabled:transform-none disabled:opacity-60"
           >
             <svg
               className="w-5 h-5"
@@ -381,10 +403,10 @@ export default function DatasetForm({ onSuccess, onCancel }) {
 
         {/* Nutrition Label Image Upload */}
         <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
             Nutrition Facts Label Image
           </label>
-          <div className="border-2 border-dashed border-gray-300/50 dark:border-gray-700/50 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-3xl p-6 text-center hover:border-green-500/80 dark:hover:border-green-600/80 hover:bg-white/70 dark:hover:bg-gray-800/70 transition-all duration-300">
+          <div className="border-2 border-dashed border-gray-300/50 bg-white/50 backdrop-blur-sm rounded-3xl p-6 text-center hover:border-yellow-500/80 hover:bg-white/70 transition-all duration-300">
             <input
               type="file"
               accept="image/*"
@@ -401,9 +423,9 @@ export default function DatasetForm({ onSuccess, onCancel }) {
                   <img
                     src={nutritionPreview}
                     alt="Nutrition label preview"
-                    className="max-h-48 mx-auto rounded-2xl object-contain shadow-xl border border-white/30 dark:border-gray-700/30"
+                    className="max-h-48 mx-auto rounded-2xl object-contain shadow-xl border border-gray-200"
                   />
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <p className="text-sm text-gray-600">
                     Click to change image
                   </p>
                 </div>
@@ -422,7 +444,7 @@ export default function DatasetForm({ onSuccess, onCancel }) {
                       d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                     />
                   </svg>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <p className="text-sm text-gray-600">
                     Click to upload nutrition label
                   </p>
                 </div>
@@ -434,7 +456,7 @@ export default function DatasetForm({ onSuccess, onCancel }) {
             type="button"
             onClick={() => setShowNutritionCamera(true)}
             disabled={!!nutritionPreview}
-            className="mt-3 w-full inline-flex items-center justify-center gap-3 px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed text-white rounded-2xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 disabled:transform-none disabled:opacity-60"
+            className="mt-3 w-full inline-flex items-center justify-center gap-3 px-6 py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed text-black rounded-2xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 disabled:transform-none disabled:opacity-60"
           >
             <svg
               className="w-5 h-5"
@@ -466,7 +488,7 @@ export default function DatasetForm({ onSuccess, onCancel }) {
               type="button"
               onClick={extractDataFromImages}
               disabled={loading}
-              className="w-full px-6 py-3.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-2xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 disabled:transform-none disabled:opacity-60 flex items-center justify-center gap-2"
+              className="w-full px-6 py-3.5 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 disabled:from-gray-400 disabled:to-gray-500 text-black rounded-2xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 disabled:transform-none disabled:opacity-60 flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>
@@ -490,11 +512,11 @@ export default function DatasetForm({ onSuccess, onCancel }) {
 
         {/* Product Information Fields */}
         <div className="mb-6 space-y-4">
-          <h4 className="text-lg font-semibold text-gray-900 dark:text-white">Product Information</h4>
+          <h4 className="text-lg font-semibold text-gray-900">Product Information</h4>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Product Name *
               </label>
               <input
@@ -502,14 +524,14 @@ export default function DatasetForm({ onSuccess, onCancel }) {
                 name="productName"
                 value={formData.productName}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 bg-white/80 dark:bg-gray-700/80 border border-gray-300/50 dark:border-gray-600/50 rounded-2xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 bg-white border border-gray-300/50 rounded-2xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all"
                 placeholder="Enter product name"
                 required
               />
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Brand
               </label>
               <input
@@ -517,7 +539,7 @@ export default function DatasetForm({ onSuccess, onCancel }) {
                 name="brand"
                 value={formData.brand}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 bg-white/80 dark:bg-gray-700/80 border border-gray-300/50 dark:border-gray-600/50 rounded-2xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 bg-white border border-gray-300/50 rounded-2xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all"
                 placeholder="Enter brand name"
               />
             </div>
@@ -526,11 +548,11 @@ export default function DatasetForm({ onSuccess, onCancel }) {
 
         {/* Nutrition Values */}
         <div className="mb-6 space-y-4">
-          <h4 className="text-lg font-semibold text-gray-900 dark:text-white">Nutrition Values (per 100g)</h4>
+          <h4 className="text-lg font-semibold text-gray-900">Nutrition Values (per 100g)</h4>
           
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Energy (kcal)
               </label>
               <input
@@ -539,13 +561,13 @@ export default function DatasetForm({ onSuccess, onCancel }) {
                 value={formData.energy}
                 onChange={handleInputChange}
                 step="0.1"
-                className="w-full px-4 py-3 bg-white/80 dark:bg-gray-700/80 border border-gray-300/50 dark:border-gray-600/50 rounded-2xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 bg-white border border-gray-300/50 rounded-2xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all"
                 placeholder="0"
               />
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Fat (g)
               </label>
               <input
@@ -554,13 +576,13 @@ export default function DatasetForm({ onSuccess, onCancel }) {
                 value={formData.fat}
                 onChange={handleInputChange}
                 step="0.1"
-                className="w-full px-4 py-3 bg-white/80 dark:bg-gray-700/80 border border-gray-300/50 dark:border-gray-600/50 rounded-2xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 bg-white border border-gray-300/50 rounded-2xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all"
                 placeholder="0"
               />
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Sugars (g)
               </label>
               <input
@@ -569,13 +591,13 @@ export default function DatasetForm({ onSuccess, onCancel }) {
                 value={formData.sugars}
                 onChange={handleInputChange}
                 step="0.1"
-                className="w-full px-4 py-3 bg-white/80 dark:bg-gray-700/80 border border-gray-300/50 dark:border-gray-600/50 rounded-2xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 bg-white border border-gray-300/50 rounded-2xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all"
                 placeholder="0"
               />
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Salt (g)
               </label>
               <input
@@ -584,13 +606,13 @@ export default function DatasetForm({ onSuccess, onCancel }) {
                 value={formData.salt}
                 onChange={handleInputChange}
                 step="0.1"
-                className="w-full px-4 py-3 bg-white/80 dark:bg-gray-700/80 border border-gray-300/50 dark:border-gray-600/50 rounded-2xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 bg-white border border-gray-300/50 rounded-2xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all"
                 placeholder="0"
               />
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Protein (g)
               </label>
               <input
@@ -599,13 +621,13 @@ export default function DatasetForm({ onSuccess, onCancel }) {
                 value={formData.protein}
                 onChange={handleInputChange}
                 step="0.1"
-                className="w-full px-4 py-3 bg-white/80 dark:bg-gray-700/80 border border-gray-300/50 dark:border-gray-600/50 rounded-2xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 bg-white border border-gray-300/50 rounded-2xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all"
                 placeholder="0"
               />
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Fiber (g)
               </label>
               <input
@@ -614,13 +636,13 @@ export default function DatasetForm({ onSuccess, onCancel }) {
                 value={formData.fiber}
                 onChange={handleInputChange}
                 step="0.1"
-                className="w-full px-4 py-3 bg-white/80 dark:bg-gray-700/80 border border-gray-300/50 dark:border-gray-600/50 rounded-2xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 bg-white border border-gray-300/50 rounded-2xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all"
                 placeholder="0"
               />
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Sodium (g)
               </label>
               <input
@@ -629,7 +651,7 @@ export default function DatasetForm({ onSuccess, onCancel }) {
                 value={formData.sodium}
                 onChange={handleInputChange}
                 step="0.1"
-                className="w-full px-4 py-3 bg-white/80 dark:bg-gray-700/80 border border-gray-300/50 dark:border-gray-600/50 rounded-2xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 bg-white border border-gray-300/50 rounded-2xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all"
                 placeholder="0"
               />
             </div>
@@ -638,10 +660,10 @@ export default function DatasetForm({ onSuccess, onCancel }) {
 
         {/* Additional Information */}
         <div className="mb-6 space-y-4">
-          <h4 className="text-lg font-semibold text-gray-900 dark:text-white">Additional Information</h4>
+          <h4 className="text-lg font-semibold text-gray-900">Additional Information</h4>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Ingredients
             </label>
             <textarea
@@ -649,13 +671,13 @@ export default function DatasetForm({ onSuccess, onCancel }) {
               value={formData.ingredients}
               onChange={handleInputChange}
               rows={3}
-              className="w-full px-4 py-3 bg-white/80 dark:bg-gray-700/80 border border-gray-300/50 dark:border-gray-600/50 rounded-2xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all resize-none"
+              className="w-full px-4 py-3 bg-white border border-gray-300/50 rounded-2xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all resize-none"
               placeholder="Enter ingredients list"
             />
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Allergens (comma-separated)
             </label>
             <input
@@ -663,45 +685,53 @@ export default function DatasetForm({ onSuccess, onCancel }) {
               name="allergens"
               value={formData.allergens}
               onChange={handleInputChange}
-              className="w-full px-4 py-3 bg-white/80 dark:bg-gray-700/80 border border-gray-300/50 dark:border-gray-600/50 rounded-2xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+              className="w-full px-4 py-3 bg-white border border-gray-300/50 rounded-2xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all"
               placeholder="e.g., Milk, Eggs, Nuts"
             />
           </div>
           
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                 Nutri-Score
+                <ScoreInfo type="nutri" />
               </label>
+              <p className="text-xs text-gray-500 mb-2">
+                A 5-color label (A-E) indicating nutritional quality. A = best, E = lowest.
+              </p>
               <select
                 name="nutriScore"
                 value={formData.nutriScore}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 bg-white/80 dark:bg-gray-700/80 border border-gray-300/50 dark:border-gray-600/50 rounded-2xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 bg-white border border-gray-300/50 rounded-2xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all"
               >
-                <option value="A">A</option>
-                <option value="B">B</option>
-                <option value="C">C</option>
-                <option value="D">D</option>
-                <option value="E">E</option>
+                <option value="A">A - Best</option>
+                <option value="B">B - Good</option>
+                <option value="C">C - Moderate</option>
+                <option value="D">D - Poor</option>
+                <option value="E">E - Worst</option>
               </select>
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                 Eco-Score
+                <ScoreInfo type="eco" />
               </label>
+              <p className="text-xs text-gray-500 mb-2">
+                Environmental impact score (A-E). A = lowest impact, E = highest impact.
+              </p>
               <select
                 name="ecoScore"
                 value={formData.ecoScore}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 bg-white/80 dark:bg-gray-700/80 border border-gray-300/50 dark:border-gray-600/50 rounded-2xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 bg-white border border-gray-300/50 rounded-2xl text-gray-900 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all"
               >
-                <option value="A">A</option>
-                <option value="B">B</option>
-                <option value="C">C</option>
-                <option value="D">D</option>
-                <option value="E">E</option>
+                <option value="A">A - Best</option>
+                <option value="B">B - Good</option>
+                <option value="C">C - Moderate</option>
+                <option value="D">D - Poor</option>
+                <option value="E">E - Worst</option>
               </select>
             </div>
           </div>
@@ -712,7 +742,7 @@ export default function DatasetForm({ onSuccess, onCancel }) {
           <button
             type="submit"
             disabled={loading || !formData.productName.trim()}
-            className="flex-1 px-6 py-3.5 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 disabled:from-gray-400 disabled:to-gray-500 text-white rounded-2xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 disabled:transform-none"
+            className="flex-1 px-6 py-3.5 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 disabled:from-gray-400 disabled:to-gray-500 text-black rounded-2xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 disabled:transform-none"
           >
             {loading ? (
               <span className="flex items-center justify-center gap-2">
@@ -730,7 +760,7 @@ export default function DatasetForm({ onSuccess, onCancel }) {
             type="button"
             onClick={handleReset}
             disabled={loading}
-            className="px-6 py-3.5 bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200/50 dark:border-gray-600/50 text-gray-800 dark:text-white rounded-2xl font-semibold transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105 active:scale-95"
+            className="px-6 py-3.5 bg-white hover:bg-gray-50 border border-gray-200 text-gray-800 rounded-2xl font-semibold transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105 active:scale-95"
           >
             Reset
           </button>
@@ -739,7 +769,7 @@ export default function DatasetForm({ onSuccess, onCancel }) {
               type="button"
               onClick={onCancel}
               disabled={loading}
-              className="px-6 py-3.5 bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm hover:bg-white dark:hover:bg-gray-700 border border-gray-200/50 dark:border-gray-600/50 text-gray-800 dark:text-white rounded-2xl font-semibold transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105 active:scale-95"
+              className="px-6 py-3.5 bg-white hover:bg-gray-50 border border-gray-200 text-gray-800 rounded-2xl font-semibold transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105 active:scale-95"
             >
               Cancel
             </button>

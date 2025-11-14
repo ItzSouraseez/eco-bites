@@ -15,12 +15,12 @@ export default function ScoreBadge({ score, label, size = 'md' }) {
   let bgColor, textColor, borderColor, darkBgColor, darkTextColor, darkBorderColor;
 
   if (scoreUpper === 'A' || scoreUpper === 'E') {
-    bgColor = 'bg-green-100/80';
-    textColor = 'text-green-800';
-    borderColor = 'border-green-300/50';
-    darkBgColor = 'dark:bg-green-900/40';
-    darkTextColor = 'dark:text-green-200';
-    darkBorderColor = 'dark:border-green-700/50';
+    bgColor = 'bg-yellow-100/80';
+    textColor = 'text-yellow-800';
+    borderColor = 'border-yellow-300/50';
+    darkBgColor = 'dark:bg-yellow-900/40';
+    darkTextColor = 'dark:text-yellow-200';
+    darkBorderColor = 'dark:border-yellow-700/50';
   } else if (scoreUpper === 'B' || scoreUpper === 'D') {
     bgColor = 'bg-yellow-100/80';
     textColor = 'text-yellow-800';
