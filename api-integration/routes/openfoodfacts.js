@@ -60,7 +60,19 @@ router.get("/search", async (req, res) => {
   try {
     const response = await fetch(url);
     const data = await response.json();
-    res.json(data); // return raw search API response
+
+    const products = data.products || [];
+
+    // clean each search result
+    const cleaned = products
+      .filter(p => p && p.product_name)
+      .map(p => formatProduct(p));
+
+    res.json({
+      count: cleaned.length,
+      items: cleaned
+    });
+
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch search results" });
   }
