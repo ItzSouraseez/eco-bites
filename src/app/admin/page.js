@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase';
-import { collection, query, orderBy, getDocs, doc, deleteDoc, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy, getDocs, doc, deleteDoc, addDoc, serverTimestamp, limit } from 'firebase/firestore';
 import Toast from '@/components/Toast';
 
 export default function AdminPanel() {
@@ -15,7 +15,7 @@ export default function AdminPanel() {
   const [toast, setToast] = useState({ isVisible: false, message: '', type: 'info' });
 
   useEffect(() => {
-    // Check admin authentication
+    // Check admin authentication immediately (synchronous check)
     const isAuthenticated = localStorage.getItem('adminAuthenticated') === 'true';
     const loginTime = localStorage.getItem('adminLoginTime');
     
@@ -26,6 +26,7 @@ export default function AdminPanel() {
       
       if (hoursDiff < 24) {
         setAuthenticated(true);
+        // Load products in background, don't block UI
         loadPendingProducts();
       } else {
         localStorage.removeItem('adminAuthenticated');
@@ -40,7 +41,12 @@ export default function AdminPanel() {
   const loadPendingProducts = async () => {
     try {
       setLoading(true);
-      const q = query(collection(db, 'pendingProducts'), orderBy('timestamp', 'desc'));
+      // Limit to 50 products for faster loading, add pagination later if needed
+      const q = query(
+        collection(db, 'pendingProducts'), 
+        orderBy('timestamp', 'desc'),
+        limit(50)
+      );
       const querySnapshot = await getDocs(q);
       const products = [];
       querySnapshot.forEach((doc) => {
@@ -66,6 +72,9 @@ export default function AdminPanel() {
   const handleApprove = async (product) => {
     setProcessingId(product.id);
     try {
+      // Optimistically update UI first for instant feedback
+      setPendingProducts(prev => prev.filter(p => p.id !== product.id));
+      
       // Move to sharedProducts
       const { id, ...productData } = product;
       await addDoc(collection(db, 'sharedProducts'), {
@@ -79,10 +88,11 @@ export default function AdminPanel() {
       await deleteDoc(doc(db, 'pendingProducts', id));
 
       showToast('Product approved and added to shared database', 'success');
-      loadPendingProducts();
     } catch (error) {
       console.error('Error approving product:', error);
       showToast('Failed to approve product', 'error');
+      // Reload on error to restore state
+      loadPendingProducts();
     } finally {
       setProcessingId(null);
     }
@@ -95,12 +105,16 @@ export default function AdminPanel() {
 
     setProcessingId(productId);
     try {
+      // Optimistically update UI first for instant feedback
+      setPendingProducts(prev => prev.filter(p => p.id !== productId));
+      
       await deleteDoc(doc(db, 'pendingProducts', productId));
       showToast('Product rejected and removed', 'success');
-      loadPendingProducts();
     } catch (error) {
       console.error('Error rejecting product:', error);
       showToast('Failed to reject product', 'error');
+      // Reload on error to restore state
+      loadPendingProducts();
     } finally {
       setProcessingId(null);
     }
@@ -112,12 +126,49 @@ export default function AdminPanel() {
     router.push('/admin/login');
   };
 
-  if (!authenticated || loading) {
+  if (!authenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-yellow-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600">Verifying authentication...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show UI immediately, show loading indicator for products
+  if (loading && pendingProducts.length === 0) {
+    return (
+      <div className="min-h-screen bg-white">
+        <div className="container mx-auto px-4 py-8 max-w-6xl">
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h1 className="text-4xl font-bold text-gray-900 mb-2">Admin Panel</h1>
+              <p className="text-gray-600">Review and approve product contributions</p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={loadPendingProducts}
+                className="px-6 py-3 bg-white/70 hover:bg-white/90 border border-white/50 text-gray-700 rounded-2xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl flex items-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Refresh
+              </button>
+              <button
+                onClick={handleLogout}
+                className="px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-2xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+          <div className="text-center py-12">
+            <div className="w-16 h-16 border-4 border-yellow-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading pending products...</p>
+          </div>
         </div>
       </div>
     );
