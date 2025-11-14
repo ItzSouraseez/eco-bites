@@ -1,0 +1,1144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Submit Product - Sustainable Food Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-green: #10B981;
+            --dark-earth: #92400E;
+            --light-bg: #F9FAFB;
+            --white: #FFFFFF;
+            --gray-light: #F3F4F6;
+            --gray-medium: #E5E7EB;
+            --gray-dark: #6B7280;
+            --text-dark: #1F2937;
+            --text-light: #6B7280;
+            --success-green: #10B981;
+            --warning-orange: #F59E0B;
+            --danger-red: #EF4444;
+            --info-blue: #3B82F6;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #F9FAFB 0%, #F0F9FF 100%);
+            color: var(--text-dark);
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        /* HEADER */
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px 0;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            color: var(--primary-green);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .header p {
+            color: var(--text-light);
+            font-size: 1rem;
+        }
+
+        /* MAIN FORM CONTAINER */
+        .form-container {
+            background: var(--white);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+            padding: 40px;
+            margin-bottom: 30px;
+        }
+
+        /* TABS */
+        .tab-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--gray-light);
+            padding-bottom: 15px;
+        }
+
+        .tab-button {
+            padding: 12px 20px;
+            border: none;
+            background: transparent;
+            color: var(--text-light);
+            font-size: 1rem;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .tab-button:hover {
+            color: var(--primary-green);
+        }
+
+        .tab-button.active {
+            color: var(--primary-green);
+            border-bottom-color: var(--primary-green);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* FORM GROUPS */
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-dark);
+            font-size: 0.95rem;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid var(--gray-medium);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary-green);
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .form-row.full {
+            grid-template-columns: 1fr;
+        }
+
+        /* UPLOAD SECTION */
+        .upload-area {
+            border: 2px dashed var(--gray-medium);
+            border-radius: 8px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: var(--gray-light);
+        }
+
+        .upload-area:hover {
+            border-color: var(--primary-green);
+            background: rgba(16, 185, 129, 0.05);
+        }
+
+        .upload-area.dragging {
+            border-color: var(--primary-green);
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .upload-area input[type="file"] {
+            display: none;
+        }
+
+        .upload-icon {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .upload-text {
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 5px;
+        }
+
+        .upload-subtext {
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+
+        .file-preview {
+            margin-top: 15px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .file-preview img {
+            max-width: 50px;
+            max-height: 50px;
+            border-radius: 4px;
+        }
+
+        /* VALIDATION PIPELINE */
+        .validation-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: var(--gray-light);
+            border-radius: 8px;
+            display: none;
+        }
+
+        .validation-section.active {
+            display: block;
+        }
+
+        .validation-title {
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+
+        .validation-stage {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px;
+            margin-bottom: 10px;
+            background: white;
+            border-radius: 6px;
+            border-left: 4px solid var(--gray-medium);
+        }
+
+        .validation-stage.processing {
+            border-left-color: var(--info-blue);
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .validation-stage.passed {
+            border-left-color: var(--success-green);
+            background: rgba(16, 185, 129, 0.05);
+        }
+
+        .validation-stage.failed {
+            border-left-color: var(--danger-red);
+            background: rgba(239, 68, 68, 0.05);
+        }
+
+        .validation-icon {
+            font-size: 1.5rem;
+            min-width: 30px;
+            text-align: center;
+        }
+
+        .validation-icon.spinner {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .validation-info {
+            flex: 1;
+        }
+
+        .validation-stage-name {
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 3px;
+        }
+
+        .validation-stage-detail {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        /* CONFIDENCE SCORE */
+        .confidence-meter {
+            margin-top: 20px;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            border: 2px solid var(--gray-medium);
+        }
+
+        .confidence-label {
+            font-weight: 600;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .confidence-score {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .confidence-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--gray-medium);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--success-green) 0%, var(--primary-green) 100%);
+            transition: width 0.5s ease;
+            border-radius: 4px;
+        }
+
+        .confidence-fill.low {
+            background: linear-gradient(90deg, var(--danger-red) 0%, var(--warning-orange) 100%);
+        }
+
+        .confidence-fill.medium {
+            background: linear-gradient(90deg, var(--warning-orange) 0%, var(--info-blue) 100%);
+        }
+
+        .confidence-text {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .confidence-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        .confidence-status.approved {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success-green);
+        }
+
+        .confidence-status.review {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning-orange);
+        }
+
+        .confidence-status.rejected {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger-red);
+        }
+
+        /* ENVIRONMENTAL IMPACT */
+        .impact-display {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            border: 2px solid var(--gray-medium);
+            display: none;
+        }
+
+        .impact-display.active {
+            display: grid;
+        }
+
+        .impact-card {
+            text-align: center;
+            padding: 15px;
+            background: var(--gray-light);
+            border-radius: 6px;
+        }
+
+        .impact-icon {
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+
+        .impact-value {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--primary-green);
+            margin-bottom: 3px;
+        }
+
+        .impact-label {
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        /* BUTTONS */
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: var(--primary-green);
+            color: white;
+            flex: 1;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #059669;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-primary:disabled {
+            background: var(--gray-medium);
+            color: var(--text-light);
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: var(--gray-light);
+            color: var(--text-dark);
+            border: 2px solid var(--gray-medium);
+        }
+
+        .btn-secondary:hover {
+            background: var(--gray-medium);
+        }
+
+        .btn-danger {
+            background: var(--danger-red);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #DC2626;
+        }
+
+        /* RESULTS SECTION */
+        .results-section {
+            margin-top: 30px;
+            padding: 25px;
+            background: white;
+            border-radius: 12px;
+            border-left: 4px solid var(--primary-green);
+            display: none;
+        }
+
+        .results-section.active {
+            display: block;
+            animation: slideIn 0.4s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .results-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .result-item {
+            padding: 12px;
+            margin-bottom: 10px;
+            background: var(--gray-light);
+            border-radius: 6px;
+            border-left: 3px solid var(--primary-green);
+        }
+
+        .result-item.warning {
+            border-left-color: var(--warning-orange);
+            background: rgba(245, 158, 11, 0.1);
+        }
+
+        .result-item.error {
+            border-left-color: var(--danger-red);
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .form-container {
+                padding: 20px;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .impact-display {
+                grid-template-columns: 1fr;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .tab-buttons {
+                gap: 5px;
+            }
+
+            .tab-button {
+                padding: 10px 15px;
+                font-size: 0.9rem;
+            }
+        }
+
+        /* ALERTS */
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .alert-success {
+            background: rgba(16, 185, 129, 0.1);
+            border-left: 4px solid var(--success-green);
+            color: var(--success-green);
+        }
+
+        .alert-warning {
+            background: rgba(245, 158, 11, 0.1);
+            border-left: 4px solid var(--warning-orange);
+            color: var(--warning-orange);
+        }
+
+        .alert-error {
+            background: rgba(239, 68, 68, 0.1);
+            border-left: 4px solid var(--danger-red);
+            color: var(--danger-red);
+        }
+
+        .alert-info {
+            background: rgba(59, 130, 246, 0.1);
+            border-left: 4px solid var(--info-blue);
+            color: var(--info-blue);
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(16, 185, 129, 0.2);
+            border-top-color: var(--primary-green);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- HEADER -->
+        <div class="header">
+            <h1>🌱 Submit Product</h1>
+            <p>Help us build a database of sustainable food products</p>
+        </div>
+
+        <!-- MAIN FORM -->
+        <div class="form-container">
+            <!-- TAB BUTTONS -->
+            <div class="tab-buttons">
+                <button class="tab-button active" data-tab="barcode">📱 Barcode Scan</button>
+                <button class="tab-button" data-tab="image">🖼️ Image Upload</button>
+                <button class="tab-button" data-tab="manual">✍️ Manual Entry</button>
+            </div>
+
+            <!-- TAB 1: BARCODE SCAN -->
+            <div class="tab-content active" id="barcode">
+                <div class="form-group">
+                    <label>Barcode (EAN-13, UPC-A)</label>
+                    <input type="text" id="barcode-input" placeholder="Enter 12-14 digit barcode" maxlength="14">
+                    <small style="color: var(--text-light);">Format: 12-14 digits only</small>
+                </div>
+                <button class="btn-primary" onclick="scanBarcode()">Scan Barcode</button>
+            </div>
+
+            <!-- TAB 2: IMAGE UPLOAD -->
+            <div class="tab-content" id="image">
+                <div class="upload-area" id="upload-area" ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+                    <div class="upload-icon">📸</div>
+                    <div class="upload-text">Click to upload or drag & drop</div>
+                    <div class="upload-subtext">PNG, JPG up to 5MB</div>
+                    <input type="file" id="image-input" accept="image/*" onchange="handleImageUpload(event)">
+                </div>
+                <div id="file-preview"></div>
+                <button class="btn-primary" onclick="uploadImage()" style="margin-top: 20px;">Upload Image</button>
+            </div>
+
+            <!-- TAB 3: MANUAL ENTRY -->
+            <div class="tab-content" id="manual">
+                <div class="form-group">
+                    <label>Product Name *</label>
+                    <input type="text" id="product-name" placeholder="e.g., Organic Quinoa Pasta" required>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Brand *</label>
+                        <input type="text" id="brand" placeholder="e.g., Ancient Harvest" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Category *</label>
+                        <select id="category" required>
+                            <option value="">Select category</option>
+                            <option value="meat">🥩 Meat</option>
+                            <option value="dairy">🧀 Dairy</option>
+                            <option value="grain">🌾 Grain</option>
+                            <option value="legumes">🫘 Legumes</option>
+                            <option value="vegetable">🥦 Vegetable</option>
+                            <option value="fruit">🍎 Fruit</option>
+                            <option value="beverage">🥤 Beverage</option>
+                            <option value="processed">📦 Processed</option>
+                            <option value="plant-based">🌱 Plant-Based</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Barcode (Optional)</label>
+                    <input type="text" id="manual-barcode" placeholder="12-14 digits">
+                </div>
+
+                <div style="border-top: 2px solid var(--gray-light); padding-top: 20px; margin-top: 20px;">
+                    <h3 style="margin-bottom: 15px; color: var(--text-dark);">Nutrition per 100g</h3>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Calories *</label>
+                            <input type="number" id="calories" placeholder="kcal" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Protein (g) *</label>
+                            <input type="number" id="protein" placeholder="0.0" step="0.1" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Carbs (g) *</label>
+                            <input type="number" id="carbs" placeholder="0.0" step="0.1" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Fat (g) *</label>
+                            <input type="number" id="fat" placeholder="0.0" step="0.1" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Fiber (g)</label>
+                            <input type="number" id="fiber" placeholder="0.0" step="0.1">
+                        </div>
+                        <div class="form-group">
+                            <label>Sugar (g)</label>
+                            <input type="number" id="sugar" placeholder="0.0" step="0.1">
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn-primary" onclick="submitManualProduct()" style="margin-top: 20px;">Submit Product</button>
+            </div>
+        </div>
+
+        <!-- VALIDATION PIPELINE -->
+        <div class="validation-section" id="validation-section">
+            <div class="validation-title">✔️ Validation Pipeline</div>
+            
+            <div class="validation-stage" id="format-check">
+                <div class="validation-icon">⏳</div>
+                <div class="validation-info">
+                    <div class="validation-stage-name">Format Validation</div>
+                    <div class="validation-stage-detail">Checking product name, brand, category...</div>
+                </div>
+            </div>
+
+            <div class="validation-stage" id="nutrition-check">
+                <div class="validation-icon">⏳</div>
+                <div class="validation-info">
+                    <div class="validation-stage-name">Nutritional Consistency</div>
+                    <div class="validation-stage-detail">Verifying Atwater calculation...</div>
+                </div>
+            </div>
+
+            <div class="validation-stage" id="image-check">
+                <div class="validation-icon">⏳</div>
+                <div class="validation-info">
+                    <div class="validation-stage-name">Image Analysis</div>
+                    <div class="validation-stage-detail">OCR and manipulation detection...</div>
+                </div>
+            </div>
+
+            <div class="validation-stage" id="fraud-check">
+                <div class="validation-icon">⏳</div>
+                <div class="validation-info">
+                    <div class="validation-stage-name">Fraud Detection</div>
+                    <div class="validation-stage-detail">Checking for suspicious patterns...</div>
+                </div>
+            </div>
+
+            <!-- CONFIDENCE METER -->
+            <div class="confidence-meter">
+                <div class="confidence-label">
+                    <span>Confidence Score</span>
+                    <span class="confidence-score" id="confidence-score">0%</span>
+                </div>
+                <div class="confidence-bar">
+                    <div class="confidence-fill" id="confidence-fill"></div>
+                </div>
+                <div class="confidence-text" id="confidence-text">Running validation checks...</div>
+                <div id="confidence-status"></div>
+            </div>
+
+            <!-- ENVIRONMENTAL IMPACT -->
+            <div class="impact-display" id="impact-display">
+                <div class="impact-card">
+                    <div class="impact-icon">💨</div>
+                    <div class="impact-value" id="impact-co2">--</div>
+                    <div class="impact-label">kg CO₂/kg</div>
+                </div>
+                <div class="impact-card">
+                    <div class="impact-icon">💧</div>
+                    <div class="impact-value" id="impact-water">--</div>
+                    <div class="impact-label">L Water/kg</div>
+                </div>
+                <div class="impact-card">
+                    <div class="impact-icon">🌍</div>
+                    <div class="impact-value" id="impact-land">--</div>
+                    <div class="impact-label">m² Land/kg</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RESULTS SECTION -->
+        <div class="results-section" id="results-section">
+            <div class="results-title" id="results-title">
+                <span id="results-icon">✅</span>
+                <span id="results-text">Product Validated Successfully!</span>
+            </div>
+            <div id="results-details"></div>
+            <button class="btn-secondary" onclick="resetForm()" style="margin-top: 20px;">Submit Another Product</button>
+        </div>
+    </div>
+
+    <script>
+        // TAB SWITCHING
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', () => {
+                const tabName = button.dataset.tab;
+                
+                document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                button.classList.add('active');
+                document.getElementById(tabName).classList.add('active');
+            });
+        });
+
+        // FILE UPLOAD HANDLING
+        const uploadArea = document.getElementById('upload-area');
+        const imageInput = document.getElementById('image-input');
+
+        uploadArea.addEventListener('click', () => imageInput.click());
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            uploadArea.classList.add('dragging');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragging');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragging');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                imageInput.files = files;
+                handleImageUpload({ target: { files: files } });
+            }
+        }
+
+        function handleImageUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const preview = document.getElementById('file-preview');
+                preview.innerHTML = `
+                    <div class="file-preview">
+                        <img src="${event.target.result}" alt="Preview">
+                        <div>
+                            <div style="font-weight: 600;">${file.name}</div>
+                            <div style="font-size: 0.85rem; color: var(--text-light);">${(file.size / 1024).toFixed(2)} KB</div>
+                        </div>
+                    </div>
+                `;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // BARCODE SCANNING
+        function scanBarcode() {
+            const barcode = document.getElementById('barcode-input').value.trim();
+            
+            if (!barcode) {
+                alert('Please enter a barcode');
+                return;
+            }
+
+            if (!/^\d{8}$|^\d{12,14}$/.test(barcode)) {
+                alert('Invalid barcode format. Use 8, 12, 13, or 14 digits.');
+                return;
+            }
+
+            startValidation({
+                type: 'barcode',
+                barcode: barcode,
+                name: 'Product from Barcode',
+                category: 'processed'
+            });
+        }
+
+        // IMAGE UPLOAD SUBMISSION
+        function uploadImage() {
+            const image = document.getElementById('image-input').files[0];
+            if (!image) {
+                alert('Please select an image');
+                return;
+            }
+
+            startValidation({
+                type: 'image',
+                image: image,
+                name: 'Product from Image'
+            });
+        }
+
+        // MANUAL PRODUCT SUBMISSION
+        function submitManualProduct() {
+            const productName = document.getElementById('product-name').value.trim();
+            const brand = document.getElementById('brand').value.trim();
+            const category = document.getElementById('category').value;
+            const calories = parseFloat(document.getElementById('calories').value);
+            const protein = parseFloat(document.getElementById('protein').value);
+            const carbs = parseFloat(document.getElementById('carbs').value);
+            const fat = parseFloat(document.getElementById('fat').value);
+            const fiber = parseFloat(document.getElementById('fiber').value) || 0;
+            const sugar = parseFloat(document.getElementById('sugar').value) || 0;
+            const barcode = document.getElementById('manual-barcode').value.trim();
+
+            // VALIDATION
+            if (!productName || !brand || !category || !calories || !protein || !carbs || !fat) {
+                alert('Please fill all required fields (marked with *)');
+                return;
+            }
+
+            if (productName.length < 3 || productName.length > 100) {
+                alert('Product name must be 3-100 characters');
+                return;
+            }
+
+            startValidation({
+                type: 'manual',
+                name: productName,
+                brand: brand,
+                category: category,
+                barcode: barcode || null,
+                nutrition: {
+                    calories: calories,
+                    protein: protein,
+                    carbs: carbs,
+                    fat: fat,
+                    fiber: fiber,
+                    sugar: sugar
+                }
+            });
+        }
+
+        // VALIDATION PIPELINE
+        function startValidation(productData) {
+            document.getElementById('validation-section').classList.add('active');
+            document.getElementById('results-section').classList.remove('active');
+
+            // Reset all stages
+            document.querySelectorAll('.validation-stage').forEach(stage => {
+                stage.classList.remove('processing', 'passed', 'failed');
+                stage.querySelector('.validation-icon').textContent = '⏳';
+            });
+
+            // Stage 1: Format Validation (500ms)
+            setTimeout(() => {
+                updateValidationStage('format-check', validateFormat(productData), 'Format Validation');
+            }, 500);
+
+            // Stage 2: Nutrition Validation (1000ms)
+            setTimeout(() => {
+                updateValidationStage('nutrition-check', validateNutrition(productData), 'Nutrition Validation');
+            }, 1200);
+
+            // Stage 3: Image Validation (1500ms)
+            setTimeout(() => {
+                updateValidationStage('image-check', productData.type === 'image', 'Image Analysis');
+            }, 1900);
+
+            // Stage 4: Fraud Detection (2000ms)
+            setTimeout(() => {
+                const fraudCheck = Math.random() > 0.1; // 90% pass rate
+                updateValidationStage('fraud-check', fraudCheck, 'Fraud Detection');
+                
+                // Calculate final confidence
+                const allStages = document.querySelectorAll('.validation-stage');
+                const passedStages = document.querySelectorAll('.validation-stage.passed').length;
+                const totalStages = allStages.length;
+                const confidenceScore = Math.round((passedStages / totalStages) * 100);
+                
+                updateConfidenceScore(confidenceScore, productData);
+                showResults(productData, confidenceScore);
+            }, 2500);
+        }
+
+        function validateFormat(data) {
+            if (!data.name || data.name.length < 3) return false;
+            if (data.barcode && !/^\d{8}$|^\d{12,14}$/.test(data.barcode)) return false;
+            return true;
+        }
+
+        function validateNutrition(data) {
+            if (!data.nutrition) return true;
+            const { calories, protein, carbs, fat } = data.nutrition;
+            const calculated = (protein * 4) + (carbs * 4) + (fat * 9);
+            const variance = Math.abs(calories - calculated) / calculated;
+            return variance < 0.15 && protein <= 50;
+        }
+
+        function updateValidationStage(stageId, passed, stageName) {
+            const stage = document.getElementById(stageId);
+            const icon = stage.querySelector('.validation-icon');
+            
+            stage.classList.remove('processing');
+            if (passed) {
+                stage.classList.add('passed');
+                icon.textContent = '✅';
+            } else {
+                stage.classList.add('failed');
+                icon.textContent = '❌';
+            }
+        }
+
+        function updateConfidenceScore(score, productData) {
+            const display = document.getElementById('confidence-score');
+            const fill = document.getElementById('confidence-fill');
+            const text = document.getElementById('confidence-text');
+            const status = document.getElementById('confidence-status');
+
+            display.textContent = score + '%';
+            fill.style.width = score + '%';
+            fill.classList.remove('low', 'medium');
+
+            if (score >= 85) {
+                fill.classList.add('high');
+                text.textContent = '✅ Product is ready for approval';
+                status.innerHTML = '<span class="confidence-status approved">AUTO-APPROVED</span>';
+            } else if (score >= 70) {
+                fill.classList.add('medium');
+                text.textContent = '⚠️ Product may need manual review';
+                status.innerHTML = '<span class="confidence-status review">MANUAL REVIEW</span>';
+            } else {
+                fill.classList.add('low');
+                text.textContent = '❌ Product failed validation checks';
+                status.innerHTML = '<span class="confidence-status rejected">REJECTED</span>';
+            }
+
+            // Show environmental impact
+            const impactDisplay = document.getElementById('impact-display');
+            if (productData.category) {
+                impactDisplay.classList.add('active');
+                const impacts = getEnvironmentalImpact(productData.category);
+                document.getElementById('impact-co2').textContent = impacts.co2.toFixed(1);
+                document.getElementById('impact-water').textContent = impacts.water.toFixed(0);
+                document.getElementById('impact-land').textContent = impacts.land.toFixed(1);
+            }
+        }
+
+        function getEnvironmentalImpact(category) {
+            const impacts = {
+                'meat': { co2: 20.0, water: 13000, land: 100 },
+                'dairy': { co2: 3.5, water: 500, land: 10 },
+                'grain': { co2: 1.5, water: 1500, land: 3 },
+                'legumes': { co2: 1.3, water: 300, land: 15 },
+                'vegetable': { co2: 0.3, water: 200, land: 0.5 },
+                'fruit': { co2: 0.4, water: 300, land: 1 },
+                'beverage': { co2: 0.8, water: 400, land: 5 },
+                'processed': { co2: 2.0, water: 1000, land: 5 },
+                'plant-based': { co2: 1.0, water: 500, land: 3 }
+            };
+            return impacts[category] || impacts['processed'];
+        }
+
+        function showResults(productData, confidenceScore) {
+            const resultsSection = document.getElementById('results-section');
+            const resultsTitle = document.getElementById('results-title');
+            const resultsDetails = document.getElementById('results-details');
+            const icon = document.getElementById('results-icon');
+            const text = document.getElementById('results-text');
+
+            let detailsHTML = '';
+
+            if (confidenceScore >= 85) {
+                icon.textContent = '✅';
+                text.textContent = 'Product Approved!';
+                resultsSection.style.borderLeftColor = 'var(--success-green)';
+                detailsHTML = `
+                    <div class="alert alert-success">
+                        <span>🎉</span>
+                        <div>Your product has been added to the database and will be available to all users!</div>
+                    </div>
+                `;
+            } else if (confidenceScore >= 70) {
+                icon.textContent = '⚠️';
+                text.textContent = 'Under Review';
+                resultsSection.style.borderLeftColor = 'var(--warning-orange)';
+                detailsHTML = `
+                    <div class="alert alert-warning">
+                        <span>👀</span>
+                        <div>Your product is being reviewed by our moderation team and will be approved shortly.</div>
+                    </div>
+                `;
+            } else {
+                icon.textContent = '❌';
+                text.textContent = 'Validation Failed';
+                resultsSection.style.borderLeftColor = 'var(--danger-red)';
+                detailsHTML = `
+                    <div class="alert alert-error">
+                        <span>🚫</span>
+                        <div>Please review the validation errors and try again.</div>
+                    </div>
+                `;
+            }
+
+            detailsHTML += `
+                <div class="result-item">
+                    <strong>Product:</strong> ${productData.name}
+                </div>
+                <div class="result-item">
+                    <strong>Category:</strong> ${productData.category || 'N/A'}
+                </div>
+                <div class="result-item">
+                    <strong>Confidence Score:</strong> ${confidenceScore}%
+                </div>
+            `;
+
+            resultsDetails.innerHTML = detailsHTML;
+            resultsSection.classList.add('active');
+        }
+
+        function resetForm() {
+            document.getElementById('product-name').value = '';
+            document.getElementById('brand').value = '';
+            document.getElementById('category').value = '';
+            document.getElementById('calories').value = '';
+            document.getElementById('protein').value = '';
+            document.getElementById('carbs').value = '';
+            document.getElementById('fat').value = '';
+            document.getElementById('fiber').value = '';
+            document.getElementById('sugar').value = '';
+            document.getElementById('manual-barcode').value = '';
+            document.getElementById('barcode-input').value = '';
+            document.getElementById('image-input').value = '';
+            document.getElementById('file-preview').innerHTML = '';
+
+            document.getElementById('validation-section').classList.remove('active');
+            document.getElementById('results-section').classList.remove('active');
+            document.getElementById('impact-display').classList.remove('active');
+
+            document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelector('.tab-button').classList.add('active');
+            document.querySelector('.tab-content').classList.add('active');
+        }
+    </script>
+</body>
+</html>
