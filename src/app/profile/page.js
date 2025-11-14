@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { db } from '@/lib/firebase';
+import { firestoreDb } from '@/lib/firebase';
 import { collection, query, where, getDocs, orderBy, limit, doc, getDoc } from 'firebase/firestore';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import UserMenu from '@/components/UserMenu';
 import Link from 'next/link';
 import Image from 'next/image';
+
+const db = firestoreDb;
 
 function ProfileContent() {
   const { user } = useAuth();

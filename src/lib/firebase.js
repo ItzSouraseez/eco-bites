@@ -1,5 +1,6 @@
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
+import { getDatabase } from 'firebase/database';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
@@ -23,8 +24,9 @@ const isFirebaseConfigured = () => {
 // Initialize Firebase only if configured
 let app;
 let auth;
-let db;
 let googleProvider;
+let realtimeDb;
+let firestoreDb;
 
 if (typeof window !== 'undefined' && isFirebaseConfigured()) {
   // Only initialize on client side and if configured
@@ -39,14 +41,16 @@ if (typeof window !== 'undefined' && isFirebaseConfigured()) {
   // Add redirect URL for better mobile support
   googleProvider.addScope('profile');
   googleProvider.addScope('email');
-  db = getFirestore(app);
+  realtimeDb = getDatabase(app);
+  firestoreDb = getFirestore(app);
 } else {
   // Create mock objects for server-side rendering
   auth = null;
-  db = null;
   googleProvider = null;
+  realtimeDb = null;
+  firestoreDb = null;
 }
 
-export { auth, db, googleProvider };
+export { auth, realtimeDb, firestoreDb, googleProvider };
 export default app;
 

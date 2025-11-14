@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { db } from '@/lib/firebase';
+import { firestoreDb } from '@/lib/firebase';
 import { collection, query, orderBy, getDocs, doc, deleteDoc, addDoc, serverTimestamp, limit, getDoc, setDoc, increment } from 'firebase/firestore';
 import Toast from '@/components/Toast';
+
+const db = firestoreDb;
 
 export default function AdminPanel() {
   const router = useRouter();
