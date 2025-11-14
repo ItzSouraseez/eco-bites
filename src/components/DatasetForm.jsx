@@ -193,7 +193,14 @@ export default function DatasetForm({ onSuccess, onCancel }) {
       return;
     }
 
+    if (!db) {
+      console.error('Firebase database not initialized');
+      showToast('Database connection error. Please refresh the page and try again.', 'error');
+      return;
+    }
+
     setLoading(true);
+    console.log('🚀 Starting product submission...');
 
     try {
       // Parse numeric values
@@ -221,26 +228,38 @@ export default function DatasetForm({ onSuccess, onCancel }) {
       else if (totalScore > 15) nutriScore = 'B';
 
       // Prepare dataset entry
+      const brandValue = formData.brand ? formData.brand.trim() : '';
+      const productNameValue = formData.productName.trim();
+      
       const datasetEntry = {
         userId: user.uid,
-        productName: formData.productName.trim(),
-        brand: formData.brand.trim() || null,
+        productName: productNameValue,
+        brand: brandValue || null,
         nutrition: nutrition,
-        ingredients: formData.ingredients.trim() || 'Not available',
+        ingredients: (formData.ingredients || '').trim() || 'Not available',
         allergens: allergens,
         nutriScore: formData.nutriScore || nutriScore,
         ecoScore: formData.ecoScore || 'B',
         packaging: [],
-        description: `${formData.productName.trim()}${formData.brand.trim() ? ` by ${formData.brand.trim()}` : ''}`,
-        productImageUrl: productPreview,
-        nutritionImageUrl: nutritionPreview,
+        description: `${productNameValue}${brandValue ? ` by ${brandValue}` : ''}`,
+        productImageUrl: productPreview || null,
+        nutritionImageUrl: nutritionPreview || null,
         servingSize: null,
         timestamp: serverTimestamp(),
         verified: false,
       };
 
+      console.log('📦 Prepared dataset entry:', {
+        productName: datasetEntry.productName,
+        userId: datasetEntry.userId,
+        hasProductImage: !!datasetEntry.productImageUrl,
+        hasNutritionImage: !!datasetEntry.nutritionImageUrl,
+      });
+
       // Save to pendingProducts collection for admin approval
-      await addDoc(collection(db, 'pendingProducts'), datasetEntry);
+      console.log('💾 Saving to Firestore...');
+      const docRef = await addDoc(collection(db, 'pendingProducts'), datasetEntry);
+      console.log('✅ Document saved with ID:', docRef.id);
 
       showToast('Product submitted successfully! It will be reviewed by an admin before being added to the database.', 'success');
       
@@ -266,13 +285,30 @@ export default function DatasetForm({ onSuccess, onCancel }) {
       });
 
       if (onSuccess) {
-        onSuccess(datasetEntry);
+        onSuccess({ id: docRef.id, ...datasetEntry });
       }
     } catch (err) {
-      console.error('Error adding to dataset:', err);
-      showToast(err.message || 'Failed to contribute product. Please try again.', 'error');
+      console.error('❌ Error adding to dataset:', err);
+      console.error('Error details:', {
+        code: err.code,
+        message: err.message,
+        stack: err.stack,
+      });
+      
+      // Provide more specific error messages
+      let errorMessage = 'Failed to contribute product. Please try again.';
+      if (err.code === 'permission-denied') {
+        errorMessage = 'Permission denied. Please check your Firestore security rules.';
+      } else if (err.code === 'unavailable') {
+        errorMessage = 'Database is temporarily unavailable. Please try again later.';
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      showToast(errorMessage, 'error');
     } finally {
       setLoading(false);
+      console.log('🏁 Submission process completed');
     }
   };
 
