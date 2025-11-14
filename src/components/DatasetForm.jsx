@@ -2,8 +2,10 @@
 
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { db } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { realtimeDb } from '@/lib/firebase';
+
+const db = realtimeDb;
+import { ref, push, set, remove, serverTimestamp } from 'firebase/database';
 import CameraCapture from '@/components/CameraCapture';
 import Toast from '@/components/Toast';
 import ScoreInfo from '@/components/ScoreInfo';
@@ -199,8 +201,67 @@ export default function DatasetForm({ onSuccess, onCancel }) {
       return;
     }
 
+    // Verify db is actually a Firestore instance
+    if (typeof db === 'undefined' || db === null) {
+      console.error('Database is null or undefined');
+      showToast('Database not available. Please check your Firebase configuration.', 'error');
+      return;
+    }
+
     setLoading(true);
     console.log('🚀 Starting product submission...');
+    console.log('🔍 Database check:', {
+      dbType: typeof db,
+      dbNotNull: db !== null,
+      user: user ? { uid: user.uid, email: user.email } : 'No user',
+    });
+
+    // Verify user is authenticated
+    if (!user || !user.uid) {
+      console.error('❌ User not authenticated');
+      showToast('Please sign in to contribute products', 'error');
+      setLoading(false);
+      return;
+    }
+
+    // Test write capability with Realtime Database
+    try {
+      console.log('🧪 Testing Realtime Database write capability...');
+      const testRef = ref(db, '_test/connection');
+      const testData = {
+        test: true,
+        timestamp: serverTimestamp(),
+        userId: user.uid,
+      };
+      
+      // Try to write a test document with a 3-second timeout
+      const testPromise = set(testRef, testData);
+      const testTimeout = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Test write timed out')), 3000)
+      );
+      
+      await Promise.race([testPromise, testTimeout]);
+      console.log('✅ Test write successful! Realtime Database is accessible.');
+      
+      // Clean up test document
+      try {
+        await remove(testRef);
+        console.log('🧹 Test document cleaned up');
+      } catch (cleanupError) {
+        console.warn('⚠️ Could not clean up test document:', cleanupError);
+      }
+    } catch (testError) {
+      console.error('❌ Test write failed:', testError);
+      if (testError.code === 'PERMISSION_DENIED') {
+        console.error('🔴 PERMISSION DENIED: Realtime Database rules are blocking writes');
+        console.error('💡 Update Realtime Database rules in Firebase Console → Realtime Database → Rules');
+        showToast('Realtime Database rules may be blocking writes. Check your rules.', 'warning');
+      } else if (testError.message === 'Test write timed out') {
+        console.error('⏱️ Test write timed out');
+        showToast('Database connection timed out. Please check your connection.', 'warning');
+      }
+      // Continue anyway - the actual save will show the real error
+    }
 
     try {
       // Parse numeric values
@@ -256,10 +317,54 @@ export default function DatasetForm({ onSuccess, onCancel }) {
         hasNutritionImage: !!datasetEntry.nutritionImageUrl,
       });
 
-      // Save to pendingProducts collection for admin approval
-      console.log('💾 Saving to Firestore...');
-      const docRef = await addDoc(collection(db, 'pendingProducts'), datasetEntry);
-      console.log('✅ Document saved with ID:', docRef.id);
+      // Save to pendingProducts in Realtime Database for admin approval
+      console.log('💾 Saving to Realtime Database...');
+      
+      // Create database reference - push() generates a unique key
+      const pendingProductsRef = ref(db, 'pendingProducts');
+      console.log('📋 Database reference created for: pendingProducts');
+      console.log('📤 Document data:', {
+        userId: datasetEntry.userId,
+        productName: datasetEntry.productName,
+        hasImages: !!(datasetEntry.productImageUrl && datasetEntry.nutritionImageUrl),
+      });
+      
+      try {
+        console.log('⏳ Calling push() to save to Realtime Database...');
+        
+        // Use push() to create a new entry with auto-generated key
+        const savePromise = push(pendingProductsRef, datasetEntry);
+        
+        // Reduced timeout to 5 seconds for faster feedback
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => {
+            console.error('⏱️ TIMEOUT: Operation timed out after 5 seconds');
+            console.error('🔍 DIAGNOSIS: Realtime Database rules might be blocking the write');
+            reject(new Error('TIMEOUT: Realtime Database operation timed out. Check your database rules.'));
+          }, 5000)
+        );
+        
+        console.log('⏳ Waiting for Realtime Database response (max 5 seconds)...');
+        const newRef = await Promise.race([savePromise, timeoutPromise]);
+        
+        if (!newRef || !newRef.key) {
+          throw new Error('Data was saved but no key was returned');
+        }
+        
+        console.log('✅ SUCCESS! Data saved with key:', newRef.key);
+        const docId = newRef.key;
+
+      } catch (saveError) {
+        console.error('💥 Save operation failed:', saveError);
+        
+        // Provide specific guidance
+        if (saveError.code === 'PERMISSION_DENIED') {
+          throw new Error('PERMISSION DENIED: Realtime Database rules are blocking this write.\n\nFix: Update rules in Firebase Console → Realtime Database → Rules tab.');
+        }
+        
+        // Re-throw timeout and other errors
+        throw saveError;
+      }
 
       showToast('Product submitted successfully! It will be reviewed by an admin before being added to the database.', 'success');
       
@@ -285,7 +390,7 @@ export default function DatasetForm({ onSuccess, onCancel }) {
       });
 
       if (onSuccess) {
-        onSuccess({ id: docRef.id, ...datasetEntry });
+        onSuccess({ id: docId, ...datasetEntry });
       }
     } catch (err) {
       console.error('❌ Error adding to dataset:', err);
@@ -293,20 +398,31 @@ export default function DatasetForm({ onSuccess, onCancel }) {
         code: err.code,
         message: err.message,
         stack: err.stack,
+        name: err.name,
       });
       
       // Provide more specific error messages
       let errorMessage = 'Failed to contribute product. Please try again.';
-      if (err.code === 'permission-denied') {
-        errorMessage = 'Permission denied. Please check your Firestore security rules.';
-      } else if (err.code === 'unavailable') {
-        errorMessage = 'Database is temporarily unavailable. Please try again later.';
+      
+      if (err.message && err.message.includes('TIMEOUT')) {
+        errorMessage = 'Database operation timed out. Please check your Realtime Database rules and connection.';
+        console.error('🔴 ACTION REQUIRED: Check Realtime Database Rules');
+        console.error('📋 Go to: https://console.firebase.google.com');
+        console.error('📋 Navigate to: Your Project → Realtime Database → Rules tab');
+      } else if (err.code === 'PERMISSION_DENIED') {
+        errorMessage = 'Permission denied. Please check your Realtime Database rules allow writes.';
+        console.error('🔴 PERMISSION DENIED: Update Realtime Database Rules');
+        console.error('📋 Go to Firebase Console → Realtime Database → Rules');
+        console.error('📋 Make sure authenticated users can write to "pendingProducts"');
+      } else if (err.code === 'unavailable' || err.code === 'UNAVAILABLE') {
+        errorMessage = 'Database is temporarily unavailable. Please check your internet connection and try again.';
       } else if (err.message) {
         errorMessage = err.message;
       }
       
       showToast(errorMessage, 'error');
     } finally {
+      // Always reset loading state
       setLoading(false);
       console.log('🏁 Submission process completed');
     }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import ImageUpload from '@/components/ImageUpload';
 import CameraCapture from '@/components/CameraCapture';
@@ -9,9 +9,12 @@ import ScoreBadge from '@/components/ScoreBadge';
 import UserMenu from '@/components/UserMenu';
 import ScoreInfo from '@/components/ScoreInfo';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { db } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, doc, getDoc, setDoc, increment } from 'firebase/firestore';
+import { realtimeDb } from '@/lib/firebase';
+import { ref, push, serverTimestamp, get, set, update, onValue } from 'firebase/database';
 import { useAuth } from '@/contexts/AuthContext';
+import DietLogModal from '@/components/DietLogModal';
+
+const db = realtimeDb;
 
 function ScannerContent() {
   const [selectedImage, setSelectedImage] = useState(null);
@@ -20,6 +23,13 @@ function ScannerContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showCamera, setShowCamera] = useState(false);
+  const [manualQuery, setManualQuery] = useState('');
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [showLogModal, setShowLogModal] = useState(false);
+  const [logDefaults, setLogDefaults] = useState(null);
+  const [logStatus, setLogStatus] = useState(null);
+  const [reminders, setReminders] = useState([]);
+  const [goals, setGoals] = useState(null);
   const { user } = useAuth();
 
   const handleImageSelect = (file) => {
@@ -39,6 +49,87 @@ function ScannerContent() {
     handleImageSelect(file);
   };
 
+  const logNutritionToHistory = async (data) => {
+    if (!user || !db) return;
+
+    try {
+      await push(ref(db, 'scans'), {
+        userId: user.uid,
+        productName: data.name,
+        brand: data.brand,
+        nutrition: data.nutrition,
+        nutriScore: data.nutriScore,
+        ecoScore: data.ecoScore,
+        imageUrl: imagePreview,
+        timestamp: serverTimestamp(),
+      });
+
+      const userStatsRef = ref(db, `userStats/${user.uid}`);
+      const snapshot = await get(userStatsRef);
+
+      if (snapshot.exists()) {
+        const currentData = snapshot.val();
+        const newTotalScans = (currentData.totalScans || 0) + 1;
+        const newPoints = (currentData.points || 0) + 1;
+        const newLevel = Math.floor(newPoints / 100) + 1;
+
+        await update(userStatsRef, {
+          totalScans: newTotalScans,
+          points: newPoints,
+          level: newLevel,
+          lastScanAt: serverTimestamp(),
+        });
+      } else {
+        await set(userStatsRef, {
+          userId: user.uid,
+          totalContributions: 0,
+          totalScans: 1,
+          points: 1,
+          level: 1,
+          lastScanAt: serverTimestamp(),
+          createdAt: serverTimestamp(),
+        });
+      }
+    } catch (err) {
+      console.error('Error logging scan history:', err);
+    }
+  };
+
+  const fetchNutritionFromImage = async () => {
+    // Send image to API route for analysis
+    const formData = new FormData();
+    formData.append('image', selectedImage);
+
+    const response = await fetch('/api/analyze', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || 'Failed to analyze image');
+    }
+
+    const result = await response.json();
+    return result.data;
+  };
+
+  const fetchNutritionFromQuery = async () => {
+    const response = await fetch('/api/nutrition-text', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: manualQuery }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || 'Failed to fetch nutrition data');
+    }
+
+    const result = await response.json();
+    return result.data;
+  };
+
   const handleAnalyze = async () => {
     if (!selectedImage) {
       setError('Please select or capture an image first');
@@ -49,98 +140,152 @@ function ScannerContent() {
     setError(null);
 
     try {
-      // Send image to API route for analysis
-      const formData = new FormData();
-      formData.append('image', selectedImage);
-
-      const response = await fetch('/api/analyze', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to analyze image');
-      }
-
-      const result = await response.json();
-      const data = result.data;
+      const data = await fetchNutritionFromImage();
       setNutritionData(data);
-
-      // Save to Firestore if user is logged in
-      if (user && db) {
-        try {
-          await addDoc(collection(db, 'scans'), {
-            userId: user.uid,
-            productName: data.name,
-            brand: data.brand,
-            nutrition: data.nutrition,
-            nutriScore: data.nutriScore,
-            ecoScore: data.ecoScore,
-            imageUrl: imagePreview,
-            timestamp: serverTimestamp(),
-          });
-
-          // Award 1 point for scan and update userStats
-          try {
-            const userStatsRef = doc(db, 'userStats', user.uid);
-            const userStatsDoc = await getDoc(userStatsRef);
-            
-            if (userStatsDoc.exists()) {
-              const currentData = userStatsDoc.data();
-              const newPoints = (currentData.points || 0) + 1;
-              const newLevel = Math.floor(newPoints / 100) + 1;
-              
-              await setDoc(userStatsRef, {
-                totalScans: increment(1),
-                points: increment(1),
-                level: newLevel,
-                lastScanAt: serverTimestamp(),
-              }, { merge: true });
-            } else {
-              await setDoc(userStatsRef, {
-                userId: user.uid,
-                totalContributions: 0,
-                totalScans: 1,
-                points: 1,
-                level: 1,
-                lastScanAt: serverTimestamp(),
-                createdAt: serverTimestamp(),
-              });
-            }
-          } catch (pointsError) {
-            console.error('Error awarding scan points:', pointsError);
-            // Don't fail the scan save if points fail
-          }
-        } catch (dbError) {
-          console.error('Error saving to database:', dbError);
-          // Don't throw - analysis was successful
-        }
-      }
+      await logNutritionToHistory(data);
     } catch (err) {
       console.error('Error analyzing image:', err);
-      let errorMessage = 'Failed to analyze image. Please try again.';
-      
-      if (err.message) {
-        errorMessage = err.message;
-      } else if (err instanceof Error) {
-        errorMessage = err.message;
-      }
-      
-      // More user-friendly error messages
-      if (errorMessage.includes('API key')) {
-        errorMessage = 'Gemini API key is not configured. Please check your environment variables.';
-      } else if (errorMessage.includes('parse')) {
-        errorMessage = 'Unable to read nutrition information from the image. Please try a clearer image with visible nutrition labels.';
-      } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
-        errorMessage = 'Network error. Please check your internet connection and try again.';
-      }
-      
-      setError(errorMessage);
+      handleFriendlyError(err);
     } finally {
       setLoading(false);
     }
   };
+
+  const handleManualSearch = async (e) => {
+    e.preventDefault();
+    if (!manualQuery.trim()) {
+      setError('Please enter a food name to search');
+      return;
+    }
+
+    setSearchLoading(true);
+    setError(null);
+
+    try {
+      const data = await fetchNutritionFromQuery();
+      setNutritionData(data);
+      setImagePreview(null);
+      setSelectedImage(null);
+      if (user && db) {
+        await logNutritionToHistory(data);
+      }
+    } catch (err) {
+      console.error('Error fetching nutrition:', err);
+      handleFriendlyError(err);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const handleFriendlyError = (err) => {
+    let errorMessage = 'Failed to analyze item. Please try again.';
+    const message = err?.message || '';
+
+    if (message.includes('API key')) {
+      errorMessage = 'Gemini API key is not configured. Please check your environment variables.';
+    } else if (message.includes('parse')) {
+      errorMessage = 'Unable to read nutrition information. Try a clearer input.';
+    } else if (message.includes('network') || message.includes('fetch')) {
+      errorMessage = 'Network error. Please check your internet connection and try again.';
+    } else if (message.length > 2) {
+      errorMessage = message;
+    }
+
+    setError(errorMessage);
+  };
+
+  const handleTrackIntake = () => {
+    if (!nutritionData) return;
+
+    const nutrition = nutritionData.nutrition || {};
+    setLogDefaults({
+      productName: nutritionData.name || 'Unknown product',
+      brand: nutritionData.brand || '',
+      imageUrl: imagePreview,
+      portionSize: '1 serving',
+      calories: nutrition.energy || 0,
+      protein: nutrition.protein || 0,
+      carbs: nutrition.carbs || 0,
+      fat: nutrition.fat || 0,
+      nutrition,
+    });
+    setShowLogModal(true);
+  };
+
+  const handleSaveIntake = async (logData) => {
+    if (!user || !db) {
+      setLogStatus({ type: 'error', message: 'Please sign in to track your diet.' });
+      return;
+    }
+
+    try {
+      const today = new Date();
+      const dateKey = today.toISOString().split('T')[0];
+      const dietRef = ref(db, `dietLogs/${user.uid}/${dateKey}`);
+
+      const entry = {
+        ...logData,
+        timestamp: serverTimestamp(),
+      };
+
+      const newLogRef = await push(dietRef, entry);
+
+      if (logData.setReminder) {
+        const remindAt = Date.now() + Number(logData.reminderMinutes || 60) * 60 * 1000;
+        await push(ref(db, `reminders/${user.uid}`), {
+          relatedEntry: newLogRef.key,
+          message: `Time to review your next meal after ${logData.mealType}`,
+          remindAt,
+          createdAt: Date.now(),
+          status: 'scheduled',
+        });
+      }
+
+      setLogStatus({ type: 'success', message: 'Added to your daily intake!' });
+      setShowLogModal(false);
+    } catch (err) {
+      console.error('Error saving diet log:', err);
+      setLogStatus({ type: 'error', message: 'Failed to save intake. Please try again.' });
+    }
+  };
+
+  useEffect(() => {
+    if (!user || !db) return;
+
+    const goalsRef = ref(db, `userGoals/${user.uid}`);
+    const remindersRef = ref(db, `reminders/${user.uid}`);
+
+    const goalsOff = onValue(goalsRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setGoals(snapshot.val());
+      } else {
+        setGoals(null);
+      }
+    });
+
+    const remindersOff = onValue(remindersRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        const list = Object.keys(data)
+          .map((key) => ({ id: key, ...data[key] }))
+          .sort((a, b) => (a.remindAt || 0) - (b.remindAt || 0));
+        setReminders(list);
+      } else {
+        setReminders([]);
+      }
+    });
+
+    return () => {
+      goalsOff();
+      remindersOff();
+    };
+  }, [user, db]);
+
+  const upcomingReminder = useMemo(() => {
+    const now = Date.now();
+    return reminders?.find((rem) => rem.remindAt && rem.remindAt > now);
+  }, [reminders]);
+
 
   const handleReset = () => {
     setSelectedImage(null);
@@ -148,6 +293,20 @@ function ScannerContent() {
     setNutritionData(null);
     setError(null);
   };
+
+  const allergenList = (() => {
+    if (!nutritionData || !nutritionData.allergens) return [];
+    if (Array.isArray(nutritionData.allergens)) {
+      return nutritionData.allergens.filter((item) => !!item && item.trim() !== '');
+    }
+    if (typeof nutritionData.allergens === 'string') {
+      return nutritionData.allergens
+        .split(',')
+        .map((item) => item.trim())
+        .filter((item) => item.length > 0);
+    }
+    return [];
+  })();
 
   return (
       <div className="min-h-screen bg-white">
@@ -218,6 +377,30 @@ function ScannerContent() {
           )}
         </div>
 
+        {/* Manual Search */}
+        <div className="bg-white/70 backdrop-blur-lg rounded-3xl shadow-xl border border-white/50 p-6 mb-6">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-3">Search food by name</h2>
+          <p className="text-sm text-gray-600 mb-4">
+            Traveling or can’t scan the package? Type the food name and we’ll analyze it for you.
+          </p>
+          <form onSubmit={handleManualSearch} className="flex flex-col md:flex-row gap-3">
+            <input
+              type="text"
+              value={manualQuery}
+              onChange={(e) => setManualQuery(e.target.value)}
+              className="flex-1 rounded-2xl border border-gray-200 px-4 py-3 bg-white focus:ring-2 focus:ring-yellow-500"
+              placeholder="e.g., grilled chicken sandwich"
+            />
+            <button
+              type="submit"
+              disabled={searchLoading}
+              className="px-6 py-3 rounded-2xl bg-gradient-to-r from-yellow-500 to-yellow-600 text-black font-semibold shadow-lg hover:from-yellow-600 hover:to-yellow-700 disabled:from-gray-300 disabled:cursor-not-allowed transition"
+            >
+              {searchLoading ? 'Searching...' : 'Search'}
+            </button>
+          </form>
+        </div>
+
         {/* Error Display */}
         {error && (
           <div className="bg-red-50/70 backdrop-blur-sm border border-red-200/50 rounded-2xl p-4 mb-6">
@@ -233,6 +416,32 @@ function ScannerContent() {
         {/* Results Display */}
         {nutritionData && (
           <div className="bg-white/70 backdrop-blur-lg rounded-3xl shadow-xl border border-white/50 p-6 space-y-6">
+            {allergenList.length > 0 && (
+              <div className="bg-red-50/80 border border-red-200/60 rounded-2xl p-4 flex flex-col gap-3 shadow-inner">
+                <div className="flex items-center gap-3 text-red-800">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M5.07 18H3a2 2 0 01-2-2V8a2 2 0 012-2h2.07M19 18h2a2 2 0 002-2V8a2 2 0 00-2-2h-2M9 22h6m-3-4v4" />
+                  </svg>
+                  <div>
+                    <p className="text-sm uppercase tracking-widest font-semibold">Allergen Warning</p>
+                    <p className="text-sm">
+                      This product contains the following allergens. Please review before consuming.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {allergenList.map((allergen, index) => (
+                    <span
+                      key={`${allergen}-${index}`}
+                      className="px-3 py-1 bg-red-100/80 text-red-800 rounded-full text-sm font-medium"
+                    >
+                      {allergen}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="flex justify-between items-start">
               <div>
                 <h2 className="text-3xl font-bold text-gray-900 mb-2">
@@ -288,16 +497,68 @@ function ScannerContent() {
               </div>
             )}
 
+            {/* Consumption CTA */}
+            <div className="bg-gray-50/80 border border-gray-200 rounded-2xl p-5 space-y-3">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <div>
+                  <p className="text-sm uppercase text-gray-500 font-semibold">
+                    Going to have this?
+                  </p>
+                  <h4 className="text-xl font-semibold text-gray-900">
+                    Add it to your daily intake or set a reminder.
+                  </h4>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={handleTrackIntake}
+                    className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-yellow-500 to-yellow-600 text-black font-semibold shadow-lg hover:from-yellow-600 hover:to-yellow-700 transition"
+                  >
+                    Track Intake
+                  </button>
+                  <Link
+                    href="/diet"
+                    className="px-5 py-2.5 rounded-2xl border border-gray-300 text-gray-800 font-semibold hover:bg-gray-100 transition"
+                  >
+                    View Goals
+                  </Link>
+                </div>
+              </div>
+              {upcomingReminder && (
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <svg className="w-4 h-4 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Next reminder scheduled for{' '}
+                  {new Date(upcomingReminder.remindAt).toLocaleTimeString([], {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                  })}
+                </div>
+              )}
+            </div>
+
+            {logStatus && (
+              <div
+                className={`rounded-2xl p-4 ${
+                  logStatus.type === 'success'
+                    ? 'bg-green-50 text-green-800 border border-green-200'
+                    : 'bg-red-50 text-red-800 border border-red-200'
+                }`}
+              >
+                {logStatus.message}
+              </div>
+            )}
+
             {/* Allergens */}
-            {nutritionData.allergens && nutritionData.allergens.length > 0 && (
+            {allergenList.length > 0 && (
               <div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">
                   Allergens
                 </h3>
                 <div className="flex flex-wrap gap-2">
-                  {nutritionData.allergens.map((allergen, index) => (
+                  {allergenList.map((allergen, index) => (
                     <span
-                      key={index}
+                      key={`${allergen}-${index}`}
                       className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm"
                     >
                       {allergen}
@@ -335,6 +596,13 @@ function ScannerContent() {
             onClose={() => setShowCamera(false)}
           />
         )}
+
+        <DietLogModal
+          open={showLogModal}
+          onClose={() => setShowLogModal(false)}
+          onSave={handleSaveIntake}
+          defaultData={logDefaults}
+        />
       </div>
     </div>
   );

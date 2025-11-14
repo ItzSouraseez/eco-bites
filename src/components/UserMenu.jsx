@@ -108,6 +108,17 @@ export default function UserMenu() {
             </svg>
             My Profile
           </Link>
+          <Link
+            href="/diet"
+            onClick={handleLinkClick}
+            className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50/80 active:bg-gray-50/80 transition-colors duration-200 flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 1.79-3 4s1.343 4 3 4 3-1.79 3-4-1.343-4-3-4z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 2v2m0 16v2m10-10h-2M6 12H4m13.657-7.657l-1.414 1.414M7.757 16.243l-1.414 1.414m0-11.314l1.414 1.414M16.243 16.243l1.414 1.414" />
+            </svg>
+            My Diet
+          </Link>
           <button
             onClick={() => {
               setIsOpen(false);
