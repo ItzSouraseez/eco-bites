@@ -15,6 +15,55 @@ import { useAuth } from '@/contexts/AuthContext';
 import DietLogModal from '@/components/DietLogModal';
 
 const db = realtimeDb;
+const USER_COUNTRY = 'India';
+const COUNTRY_COORDS = {
+  india: { lat: 20.5937, lon: 78.9629 },
+  malaysia: { lat: 4.2105, lon: 101.9758 },
+  china: { lat: 35.8617, lon: 104.1954 },
+  usa: { lat: 37.0902, lon: -95.7129 },
+  unitedstates: { lat: 37.0902, lon: -95.7129 },
+  'united states': { lat: 37.0902, lon: -95.7129 },
+  uk: { lat: 55.3781, lon: -3.436 },
+  'united kingdom': { lat: 55.3781, lon: -3.436 },
+  germany: { lat: 51.1657, lon: 10.4515 },
+  france: { lat: 46.2276, lon: 2.2137 },
+  japan: { lat: 36.2048, lon: 138.2529 },
+  australia: { lat: -25.2744, lon: 133.7751 },
+  brazil: { lat: -14.235, lon: -51.9253 },
+  canada: { lat: 56.1304, lon: -106.3468 },
+  singapore: { lat: 1.3521, lon: 103.8198 },
+  indonesia: { lat: -0.7893, lon: 113.9213 },
+  thailand: { lat: 15.87, lon: 100.9925 },
+  spain: { lat: 40.4637, lon: -3.7492 },
+};
+
+const toKey = (country) => country?.toLowerCase().replace(/[^a-z]/g, '') || null;
+
+const getCoords = (country) => {
+  const key = toKey(country);
+  return key ? COUNTRY_COORDS[key] || null : null;
+};
+
+const toTitleCase = (country) =>
+  country
+    ? country
+        .toLowerCase()
+        .split(' ')
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ')
+    : '';
+
+const haversineDistance = (lat1, lon1, lat2, lon2) => {
+  const R = 6371;
+  const toRad = (deg) => (deg * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
 
 function ScannerContent() {
   const [selectedImage, setSelectedImage] = useState(null);
@@ -202,6 +251,7 @@ function ScannerContent() {
       productName: nutritionData.name || 'Unknown product',
       brand: nutritionData.brand || '',
       imageUrl: imagePreview,
+      originCountry: nutritionData.originCountry || null,
       portionSize: '1 serving',
       calories: nutrition.energy || 0,
       protein: nutrition.protein || 0,
@@ -307,6 +357,25 @@ function ScannerContent() {
     }
     return [];
   })();
+
+  const originImpact = useMemo(() => {
+    if (!nutritionData?.originCountry) return null;
+    const originCoords = getCoords(nutritionData.originCountry);
+    const userCoords = getCoords(USER_COUNTRY);
+    if (!originCoords || !userCoords) return null;
+    const distanceKm = haversineDistance(
+      originCoords.lat,
+      originCoords.lon,
+      userCoords.lat,
+      userCoords.lon
+    );
+    const co2SavedKg = Number(((distanceKm * 0.18) / 1000).toFixed(2));
+    return {
+      originCountry: toTitleCase(nutritionData.originCountry),
+      distanceKm: Math.round(distanceKm),
+      co2SavedKg,
+    };
+  }, [nutritionData]);
 
   return (
       <div className="min-h-screen bg-white">
@@ -416,6 +485,23 @@ function ScannerContent() {
         {/* Results Display */}
         {nutritionData && (
           <div className="bg-white/70 backdrop-blur-lg rounded-3xl shadow-xl border border-white/50 p-6 space-y-6">
+            {originImpact && (
+              <div className="bg-emerald-50/80 border border-emerald-200/80 rounded-2xl p-4 flex gap-3 shadow-inner">
+                <div className="text-emerald-600 pt-1">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div className="text-sm text-emerald-900 space-y-1">
+                  <p className="font-semibold">
+                    This product originated from {originImpact.originCountry || 'its source'} and traveled approximately {originImpact.distanceKm.toLocaleString()} km to reach you in {USER_COUNTRY}.
+                  </p>
+                  <p>
+                    Choosing a local alternative could cut roughly {originImpact.co2SavedKg} kg CO₂ from transport emissions.
+                  </p>
+                </div>
+              </div>
+            )}
             {allergenList.length > 0 && (
               <div className="bg-red-50/80 border border-red-200/60 rounded-2xl p-4 flex flex-col gap-3 shadow-inner">
                 <div className="flex items-center gap-3 text-red-800">

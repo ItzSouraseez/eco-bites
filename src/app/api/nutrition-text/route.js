@@ -33,10 +33,11 @@ export async function POST(request) {
       'gemini-1.5-flash',
     ];
 
-    const prompt = `You are a nutrition expert. For the food "${query}", provide a JSON response with this exact structure:
+const prompt = `You are a nutrition expert. For the food "${query}", provide a JSON response with this exact structure:
 {
   "name": "",
   "brand": "",
+  "originCountry": "",
   "nutrition": {
     "energy": 0,
     "fat": 0,
@@ -87,6 +88,7 @@ Return ONLY valid JSON with no extra text.`;
           data: {
             ...parsed,
             name: parsed.name || query,
+            originCountry: parsed.originCountry || null,
             allergens: Array.isArray(parsed.allergens) ? parsed.allergens : [],
           },
         });
