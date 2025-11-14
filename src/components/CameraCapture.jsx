@@ -64,6 +64,7 @@ export default function CameraCapture({ onCapture, onClose }) {
         onCapture(file);
       }
       stopCamera();
+      // Don't close immediately - let user see the preview
       if (onClose) onClose();
     }, 'image/jpeg', 0.9);
   };
@@ -86,11 +87,12 @@ export default function CameraCapture({ onCapture, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black z-50 flex flex-col">
-      <div className="flex-1 relative">
+      <div className="flex-1 relative overflow-hidden">
         <video
           ref={videoRef}
           autoPlay
           playsInline
+          muted
           className="w-full h-full object-cover"
         />
         <canvas ref={canvasRef} className="hidden" />
@@ -101,7 +103,8 @@ export default function CameraCapture({ onCapture, onClose }) {
             stopCamera();
             if (onClose) onClose();
           }}
-          className="absolute top-4 right-4 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-75"
+          className="absolute top-4 right-4 bg-black bg-opacity-70 text-white p-3 rounded-full hover:bg-opacity-90 z-20 transition-all"
+          aria-label="Close camera"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -109,14 +112,19 @@ export default function CameraCapture({ onCapture, onClose }) {
         </button>
       </div>
 
-      {/* Capture button */}
-      <div className="bg-black bg-opacity-50 p-8 flex justify-center">
+      {/* Capture button - Fixed at bottom */}
+      <div className="bg-gradient-to-t from-black via-black/80 to-transparent p-6 flex flex-col items-center gap-3 relative z-20">
         <button
           onClick={capturePhoto}
-          className="w-20 h-20 rounded-full bg-white border-4 border-gray-300 hover:border-gray-400 transition-colors"
+          disabled={!stream}
+          className="w-20 h-20 rounded-full bg-white border-4 border-gray-200 hover:border-gray-100 active:scale-95 transition-all shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed relative"
+          aria-label="Capture photo"
         >
           <div className="w-full h-full rounded-full bg-white"></div>
         </button>
+        <p className="text-white text-sm font-medium drop-shadow-lg">
+          {stream ? 'Tap to capture' : 'Loading camera...'}
+        </p>
       </div>
     </div>
   );

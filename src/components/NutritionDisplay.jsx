@@ -28,7 +28,7 @@ export default function NutritionDisplay({ nutrition }) {
   return (
     <div className="space-y-6">
       {/* Radar Chart */}
-      <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+      <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-3xl p-6 border border-white/30 dark:border-gray-700/50 shadow-lg">
         <ResponsiveContainer width="100%" height={300}>
           <RadarChart data={radarData}>
             <PolarGrid stroke="#e5e7eb" />
@@ -64,7 +64,7 @@ export default function NutritionDisplay({ nutrition }) {
 
       {/* Nutrition Facts Grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
+        <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl p-4 border border-white/30 dark:border-gray-700/50 shadow-md hover:shadow-lg transition-shadow">
           <div className="text-sm text-gray-600 dark:text-gray-400">Energy</div>
           <div className="text-xl font-semibold text-gray-900 dark:text-white">
             {nutrition.energy || 0} kcal

@@ -10,6 +10,7 @@ A Next.js application that uses your camera to scan food products and get instan
 - 💾 **Personal Database**: Save your scans to Firebase Firestore
 - 📊 **Nutrition Visualization**: Interactive charts and detailed nutrition facts
 - 🌱 **Sustainability Scores**: Nutri-Score and Eco-Score ratings
+- 🗄️ **Custom Dataset Builder**: Build your own product database by uploading product and nutrition label images
 
 ## Tech Stack
 
@@ -59,6 +60,13 @@ npm install
 4. Create a new API key or use an existing one
 5. Copy your API key
 
+**Important**: Make sure the Gemini API is enabled in your Google Cloud Console:
+- Go to [Google Cloud Console](https://console.cloud.google.com/)
+- Select your project (or create one)
+- Go to "APIs & Services" → "Library"
+- Search for "Generative Language API" or "Gemini API"
+- Click "Enable" if it's not already enabled
+
 ### 4. Configure Environment Variables
 
 Create a `.env.local` file in the root directory:
@@ -88,6 +96,13 @@ service cloud.firestore {
     match /scans/{scanId} {
       allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
       allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    }
+    
+    // Users can read all products (for searching) but only write their own
+    match /products/{productId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
     }
   }
 }
@@ -128,6 +143,8 @@ src/
 
 ### Firestore Collection: `scans`
 
+User's scan history (from camera scanner):
+
 ```javascript
 {
   userId: string,           // Firebase Auth UID
@@ -149,7 +166,41 @@ src/
 }
 ```
 
+### Firestore Collection: `products`
+
+Custom dataset (from dataset builder):
+
+```javascript
+{
+  userId: string,           // Firebase Auth UID
+  productName: string,       // Product name extracted from image
+  brand: string,             // Brand name
+  nutrition: {               // Nutrition data per 100g (from label)
+    energy: number,
+    fat: number,
+    sugars: number,
+    salt: number,
+    protein: number,
+    fiber: number,
+    sodium: number
+  },
+  ingredients: string,       // Ingredients list from label
+  allergens: array,          // Allergens listed on label
+  nutriScore: string,       // Calculated Nutri-Score
+  ecoScore: string,          // Default or calculated
+  packaging: array,          // Packaging materials
+  description: string,       // Product description
+  productImageUrl: string,  // Base64 product image
+  nutritionImageUrl: string, // Base64 nutrition label image
+  servingSize: string,       // Serving size from label
+  timestamp: Timestamp,      // Server timestamp
+  verified: boolean          // Whether data has been verified
+}
+```
+
 ## Usage
+
+### Scanning Products
 
 1. **Sign In**: Click "Sign in with Google" to authenticate
 2. **Upload/Capture**: Upload an image or use your camera to capture a food product
@@ -157,11 +208,21 @@ src/
 4. **View Results**: See detailed nutrition facts, scores, ingredients, and more
 5. **Save**: Your scans are automatically saved to Firestore (if signed in)
 
+### Building Your Dataset
+
+1. **Go to Dataset Builder**: Click "Build Dataset" link on the home page
+2. **Upload Product Image**: Upload an image showing the product name and brand
+3. **Upload Nutrition Label**: Upload an image of the nutrition facts label
+4. **Add to Dataset**: Click "Add to Dataset" - the AI will extract all information
+5. **Save**: The product is saved to your custom `products` collection in Firestore
+
 ## API Endpoints
 
 ### POST /api/analyze
 
-Analyzes a food product image using Gemini AI.
+Analyzes a food product image using Gemini AI. Two-step process:
+1. Identifies product name from image
+2. Queries Gemini knowledge base for nutrition data
 
 **Request:**
 - Method: POST
@@ -177,6 +238,26 @@ Analyzes a food product image using Gemini AI.
     "nutriScore": "A",
     "ecoScore": "B",
     ...
+  }
+}
+```
+
+### POST /api/extract-nutrition
+
+Extracts nutrition data directly from a nutrition facts label image.
+
+**Request:**
+- Method: POST
+- Body: FormData with `image` field (nutrition label image)
+
+**Response:**
+```json
+{
+  "data": {
+    "nutrition": { ... },
+    "ingredients": "...",
+    "allergens": [...],
+    "servingSize": "..."
   }
 }
 ```
@@ -200,6 +281,37 @@ npm start
 2. Add environment variables in Vercel dashboard
 3. Update Firebase authorized domains with your production URL
 4. Update Firestore security rules if needed
+
+## Troubleshooting
+
+### "No supported Gemini model available"
+
+If you see this error, check:
+
+1. **API Key**: Verify your `GEMINI_API_KEY` is set correctly in `.env.local`
+   ```bash
+   # Check if the key is set
+   echo $GEMINI_API_KEY
+   ```
+
+2. **Enable Gemini API**: Make sure the Generative Language API is enabled:
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - APIs & Services → Library
+   - Search for "Generative Language API"
+   - Click "Enable"
+
+3. **Check API Key Permissions**: Ensure your API key has access to Gemini models
+
+4. **Check Console Logs**: Look at your server console for detailed error messages about which models failed
+
+5. **Try a Different API Key**: Create a new API key in [Google AI Studio](https://aistudio.google.com/)
+
+### "Failed to analyze image"
+
+- Make sure the image is clear and shows nutrition labels
+- Try a different image format (JPG, PNG)
+- Check your internet connection
+- Verify the Gemini API key is valid
 
 ## License
 
