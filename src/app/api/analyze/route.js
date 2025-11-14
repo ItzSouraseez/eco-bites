@@ -36,7 +36,8 @@ export async function POST(request) {
     const identificationPrompt = `Look at this food product image and identify what product it is. Return ONLY a JSON object with this exact format:
 {
   "name": "exact product name",
-  "brand": "brand name if visible, otherwise null"
+  "brand": "brand name if visible, otherwise null",
+  "originCountry": "country of origin or null"
 }
 
 Return ONLY the JSON, no additional text or markdown.`;
@@ -99,6 +100,9 @@ Return ONLY the JSON, no additional text or markdown.`;
         }
         
         productInfo = JSON.parse(cleanedText);
+        if (!productInfo.originCountry) {
+          productInfo.originCountry = null;
+        }
         usedModel = modelName;
         console.log(`✓ Product identified: ${productInfo.name} (${productInfo.brand || 'no brand'})`);
         break;
@@ -198,6 +202,7 @@ Return ONLY the JSON, no additional text or markdown.`;
             nutritionData = {
               name: bestMatch.productName || productInfo.name,
               brand: bestMatch.brand || productInfo.brand || null,
+              originCountry: bestMatch.originCountry || productInfo.originCountry || null,
               nutrition: bestMatch.nutrition || {
                 energy: 0,
                 fat: 0,
@@ -235,6 +240,7 @@ IMPORTANT: Return ONLY a valid JSON object, no markdown, no code blocks, no expl
 {
   "name": "${productInfo.name}",
   "brand": ${productInfo.brand ? `"${productInfo.brand}"` : 'null'},
+  "originCountry": "country of origin or null",
   "nutrition": {
     "energy": 250,
     "fat": 10.5,
@@ -293,6 +299,9 @@ Rules:
         }
         
         nutritionData = JSON.parse(cleanedNutritionText);
+        if (!nutritionData.originCountry) {
+          nutritionData.originCountry = productInfo.originCountry || null;
+        }
         console.log(`✓ Nutrition data retrieved from Gemini for: ${nutritionData.name}`);
         break;
       } catch (modelError) {
@@ -311,6 +320,7 @@ Rules:
       nutritionData = {
         name: productInfo.name,
         brand: productInfo.brand || null,
+        originCountry: productInfo.originCountry || null,
         nutrition: {
           energy: 0,
           fat: 0,
@@ -351,6 +361,10 @@ Rules:
         fiber: 0,
         sodium: 0,
       };
+    }
+
+    if (!nutritionData.originCountry) {
+      nutritionData.originCountry = productInfo.originCountry || null;
     }
     
     // Ensure scores are valid
