@@ -20,62 +20,80 @@ function ProfileContent() {
   });
   const [recentContributions, setRecentContributions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(true);
 
   useEffect(() => {
-    if (!user || !db) return;
+    if (!user || !db) {
+      setLoading(false);
+      return;
+    }
 
     const fetchUserStats = async () => {
       try {
-        // Get total contributions
-        const contributionsQuery = query(
-          collection(db, 'sharedProducts'),
-          where('userId', '==', user.uid)
-        );
-        const contributionsSnapshot = await getDocs(contributionsQuery);
+        // Show UI immediately, load data in background
+        setLoading(false);
+        setDataLoading(true);
+
+        // Run all queries in parallel for faster loading
+        // Optimize: Get recent contributions (limit 100) and use for both display and approximate count
+        const [contributionsSnapshot, scansSnapshot, pendingSnapshot] = await Promise.all([
+          // Get approved contributions (limit to 100 for performance - counts are approximate for power users)
+          getDocs(query(
+            collection(db, 'sharedProducts'),
+            where('userId', '==', user.uid),
+            orderBy('timestamp', 'desc'),
+            limit(100)
+          )),
+          // Get scans (limit to 1000 for performance)
+          getDocs(query(
+            collection(db, 'scans'),
+            where('userId', '==', user.uid),
+            orderBy('timestamp', 'desc'),
+            limit(1000)
+          )),
+          // Get pending contributions
+          getDocs(query(
+            collection(db, 'pendingProducts'),
+            where('userId', '==', user.uid)
+          ))
+        ]);
+
+        // Use contributions snapshot for both count and recent display
         const contributionsCount = contributionsSnapshot.size;
-
-        // Get total scans
-        const scansQuery = query(
-          collection(db, 'scans'),
-          where('userId', '==', user.uid)
-        );
-        const scansSnapshot = await getDocs(scansQuery);
+        const pendingCount = pendingSnapshot.size;
         const scansCount = scansSnapshot.size;
+        
+        // Get recent 5 from the contributions we already fetched
+        const recentContributionsData = contributionsSnapshot.docs.slice(0, 5);
 
-        // Calculate points (10 points per contribution, 1 point per scan)
+        // Calculate points (10 points per approved contribution, 1 point per scan)
+        // Pending contributions don't count until approved
         const points = (contributionsCount * 10) + scansCount;
 
         // Calculate level (every 100 points = 1 level)
         const level = Math.floor(points / 100) + 1;
         const nextLevelPoints = level * 100;
-        const progressToNextLevel = (points % 100) / 100;
 
         setStats({
-          totalContributions: contributionsCount,
+          totalContributions: contributionsCount + pendingCount, // Show total including pending
           totalScans: scansCount,
           points: points,
           level: level,
           nextLevelPoints: nextLevelPoints,
-          progressToNextLevel: progressToNextLevel,
+          progressToNextLevel: (points % 100) / 100,
         });
 
-        // Get recent contributions
-        const recentQuery = query(
-          collection(db, 'sharedProducts'),
-          where('userId', '==', user.uid),
-          orderBy('timestamp', 'desc'),
-          limit(5)
-        );
-        const recentSnapshot = await getDocs(recentQuery);
-        const recent = recentSnapshot.docs.map(doc => ({
+        // Get recent contributions from the contributions we already fetched
+        const recent = recentContributionsData.map(doc => ({
           id: doc.id,
           ...doc.data(),
         }));
         setRecentContributions(recent);
+        setDataLoading(false);
       } catch (error) {
         console.error('Error fetching user stats:', error);
-      } finally {
         setLoading(false);
+        setDataLoading(false);
       }
     };
 
@@ -105,12 +123,18 @@ function ProfileContent() {
     return badges;
   };
 
+  // Show skeleton UI while loading instead of blocking
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-yellow-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading profile...</p>
+      <div className="min-h-screen bg-white">
+        <div className="container mx-auto px-4 py-8 max-w-6xl">
+          <div className="animate-pulse space-y-6">
+            <div className="h-32 bg-gray-200/50 rounded-3xl"></div>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="h-64 bg-gray-200/50 rounded-3xl"></div>
+              <div className="h-64 bg-gray-200/50 rounded-3xl"></div>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -173,15 +197,21 @@ function ProfileContent() {
                 <div className="flex flex-wrap items-center justify-center md:justify-start gap-6 mb-4">
                   <div className="bg-white/20 backdrop-blur-sm rounded-2xl px-6 py-3">
                     <div className="text-sm text-white/80">Total Points</div>
-                    <div className="text-3xl font-bold text-white">{stats.points}</div>
+                    <div className="text-3xl font-bold text-white">
+                      {dataLoading ? '...' : stats.points}
+                    </div>
                   </div>
                   <div className="bg-white/20 backdrop-blur-sm rounded-2xl px-6 py-3">
                     <div className="text-sm text-white/80">Contributions</div>
-                    <div className="text-3xl font-bold text-white">{stats.totalContributions}</div>
+                    <div className="text-3xl font-bold text-white">
+                      {dataLoading ? '...' : stats.totalContributions}
+                    </div>
                   </div>
                   <div className="bg-white/20 backdrop-blur-sm rounded-2xl px-6 py-3">
                     <div className="text-sm text-white/80">Scans</div>
-                    <div className="text-3xl font-bold text-white">{stats.totalScans}</div>
+                    <div className="text-3xl font-bold text-white">
+                      {dataLoading ? '...' : stats.totalScans}
+                    </div>
                   </div>
                 </div>
 
