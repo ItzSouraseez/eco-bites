@@ -31,8 +31,9 @@ export default function LandingPage() {
 
   const handleSignIn = async () => {
     try {
+      // signInWithRedirect will redirect the user to Google, then back to our app
+      // No need to manually navigate - the redirect will bring them back
       await signInWithGoogle();
-      router.push('/scanner');
     } catch (error) {
       console.error('Sign in error:', error);
     }

@@ -3,7 +3,8 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { 
   onAuthStateChanged, 
-  signInWithPopup, 
+  signInWithRedirect,
+  getRedirectResult,
   signOut as firebaseSignOut,
 } from 'firebase/auth';
 import { auth, googleProvider } from '@/lib/firebase';
@@ -28,12 +29,35 @@ export function AuthProvider({ children }) {
       return;
     }
 
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      setLoading(false);
-    });
+    let unsubscribe = null;
 
-    return () => unsubscribe();
+    // Check for redirect result first (when user returns from Google sign-in)
+    const checkRedirectResult = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result) {
+          // User successfully signed in via redirect
+          // The onAuthStateChanged listener will also fire, so we don't need to set user here
+        }
+      } catch (error) {
+        console.error('Error getting redirect result:', error);
+      } finally {
+        // Set up auth state listener
+        unsubscribe = onAuthStateChanged(auth, (user) => {
+          setUser(user);
+          setLoading(false);
+        });
+      }
+    };
+
+    checkRedirectResult();
+
+    // Cleanup function
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
   }, []);
 
   const signInWithGoogle = async () => {
@@ -41,7 +65,10 @@ export function AuthProvider({ children }) {
       throw new Error('Firebase not configured');
     }
     try {
-      await signInWithPopup(auth, googleProvider);
+      // Use redirect instead of popup for better mobile support
+      await signInWithRedirect(auth, googleProvider);
+      // Note: The function will redirect the user, so this line won't execute
+      // The redirect result will be handled in the useEffect above
     } catch (error) {
       console.error('Error signing in with Google:', error);
       throw error;
