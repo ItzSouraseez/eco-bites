@@ -4,6 +4,32 @@ const express = require("express");
 const router = express.Router();
 const fetch = require("node-fetch");
 
+// Clean and normalize product data
+function formatProduct(p) {
+  if (!p) return null;
+
+  return {
+    name: p.product_name || null,
+    brand: p.brands || null,
+    image: p.image_front_small_url || null,
+    categories: p.categories || null,
+
+    nutriments: p.nutriments || {},
+
+    ecoscore: {
+      score: p.ecoscore_score || null,
+      grade: p.ecoscore_grade || null
+    },
+
+    nutriscore: p.nutriscore_grade || null,
+    nova: p.nova_group || null,
+
+    quantity: p.quantity || null,
+    labels: p.labels || null,
+    allergens: p.allergens || null
+  };
+}
+
 // GET /api/product/:barcode
 // Fetch raw product data from OpenFoodFacts
 router.get("/product/:barcode", async (req, res) => {
