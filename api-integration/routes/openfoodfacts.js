@@ -19,4 +19,20 @@ router.get("/product/:barcode", async (req, res) => {
   }
 });
 
+// GET /api/search?q=milk
+// Search products by name using OpenFoodFacts
+router.get("/search", async (req, res) => {
+  const query = req.query.q;
+
+  const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1`;
+
+  try {
+    const response = await fetch(url);
+    const data = await response.json();
+    res.json(data); // return raw search API response
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch search results" });
+  }
+});
+
 module.exports = router;
