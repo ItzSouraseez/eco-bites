@@ -63,13 +63,29 @@ export async function POST(request) {
 
     const { query, productId, userId } = validation.data;
 
+    // Get user from auth header if available
+    const authHeader = request.headers.get('authorization');
+    let authenticatedUserId = userId;
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      try {
+        const token = authHeader.replace('Bearer ', '');
+        const { data: { user } } = await supabase.auth.getUser(token);
+        if (user) {
+          authenticatedUserId = user.id;
+        }
+      } catch (err) {
+        console.error('Error verifying auth token:', err);
+      }
+    }
+
     // Insert into database
     const { data, error } = await supabase
       .from('search_history')
       .insert({
         query,
         product_id: productId || null,
-        user_id: userId || null,
+        user_id: authenticatedUserId || null,
       })
       .select()
       .single();

@@ -61,7 +61,14 @@ npm install
      - **anon/public key** (a long string starting with `eyJ...`)
    - Copy both of these values - you'll need them in the next step
 
-   **Step 3: Run the Database Migration**
+   **Step 3: Enable Authentication**
+   - In your Supabase dashboard, go to **Authentication** (in the left sidebar)
+   - Click on **Providers** in the Authentication section
+   - Enable **Email** provider (it should be enabled by default)
+   - Optionally configure email templates if needed
+   - Authentication is now ready to use!
+
+   **Step 4: Run the Database Migration**
    - In your Supabase dashboard, go to **SQL Editor** (in the left sidebar)
    - Click **New query**
    - Open the file `supabase/migrations/001_initial_schema.sql` from this project
@@ -69,9 +76,10 @@ npm install
    - Paste it into the SQL Editor in Supabase
    - Click **Run** (or press Ctrl/Cmd + Enter)
    - You should see a success message confirming the tables were created
-   - Verify by going to **Table Editor** - you should see `users` and `search_history` tables
+   - Verify by going to **Table Editor** - you should see `search_history` table
+   - Note: The `users` table is automatically managed by Supabase Auth
 
-4. Set up OpenFoodFacts API (Optional but Recommended):
+5. Set up OpenFoodFacts API (Optional but Recommended):
 
    **Getting an OpenFoodFacts API Key:**
    - Go to [OpenFoodFacts.org](https://world.openfoodfacts.org/)
@@ -86,7 +94,7 @@ npm install
    - Helps track usage
    - Provides better reliability
 
-5. Create environment variables:
+6. Create environment variables:
    - In the root directory of your project, create a file named `.env.local`
    - Add your credentials (replace with your actual values):
 ```env
@@ -104,12 +112,27 @@ OPENFOODFACTS_API_KEY=your_api_key_here
      - Never commit `.env.local` to git (it's already in `.gitignore`)
      - The `.env.local` file should be in the same directory as `package.json`
 
-6. Run the development server:
+7. Run the development server:
 ```bash
 npm run dev
 ```
 
-7. Open [http://localhost:3000](http://localhost:3000) in your browser
+8. Open [http://localhost:3000](http://localhost:3000) in your browser
+
+## Authentication
+
+EcoBites includes user authentication powered by Supabase Auth:
+
+- **Sign Up**: Create a new account at `/auth/signup`
+- **Sign In**: Log in to your account at `/auth/signin`
+- **User Menu**: Click on your profile icon in the top right to access your account
+- **Search History**: When logged in, your search history is automatically saved and linked to your account
+
+### Features:
+- Email/password authentication
+- Secure session management
+- User-specific search history
+- Automatic token management
 
 ### Quick Reference: Environment Variables
 

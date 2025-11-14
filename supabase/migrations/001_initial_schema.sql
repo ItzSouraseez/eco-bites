@@ -1,16 +1,13 @@
--- Create users table
-CREATE TABLE IF NOT EXISTS users (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  email TEXT UNIQUE NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+-- Note: Supabase Auth automatically creates auth.users table
+-- We reference auth.users for user authentication
 
 -- Create search_history table
+-- user_id references auth.users.id (Supabase Auth user ID)
 CREATE TABLE IF NOT EXISTS search_history (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   query TEXT NOT NULL,
   product_id TEXT,
-  user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -19,19 +16,22 @@ CREATE INDEX IF NOT EXISTS idx_search_history_user_id ON search_history(user_id)
 CREATE INDEX IF NOT EXISTS idx_search_history_created_at ON search_history(created_at DESC);
 
 -- Enable Row Level Security (RLS)
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE search_history ENABLE ROW LEVEL SECURITY;
 
--- Create policies for public access (adjust based on your security needs)
-CREATE POLICY "Allow public read access on search_history" ON search_history
-  FOR SELECT USING (true);
+-- Create policies for search_history
+-- Users can only see their own history
+CREATE POLICY "Users can view their own search history" ON search_history
+  FOR SELECT USING (auth.uid() = user_id);
 
-CREATE POLICY "Allow public insert on search_history" ON search_history
-  FOR INSERT WITH CHECK (true);
+-- Users can insert their own search history
+CREATE POLICY "Users can insert their own search history" ON search_history
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY "Allow public read access on users" ON users
-  FOR SELECT USING (true);
+-- Allow anonymous users to insert (for non-authenticated searches)
+CREATE POLICY "Allow anonymous insert on search_history" ON search_history
+  FOR INSERT WITH CHECK (user_id IS NULL);
 
-CREATE POLICY "Allow public insert on users" ON users
-  FOR INSERT WITH CHECK (true);
+-- Allow anonymous users to view (optional - remove if you want authenticated-only)
+CREATE POLICY "Allow anonymous read on search_history" ON search_history
+  FOR SELECT USING (user_id IS NULL);
 

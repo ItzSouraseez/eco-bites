@@ -5,12 +5,15 @@ import SearchBar from '@/components/SearchBar';
 import ProductCard from '@/components/ProductCard';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
 import ErrorState from '@/components/ErrorState';
+import UserMenu from '@/components/UserMenu';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function Home() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [hasSearched, setHasSearched] = useState(false);
+  const { user, supabase } = useAuth();
   
   // Track the last searched query and ongoing requests to prevent duplicates
   const lastQueryRef = useRef(null);
@@ -74,12 +77,30 @@ export default function Home() {
 
       // Save to history (non-blocking, don't await)
       if (!abortController.signal.aborted) {
-        fetch('/api/history', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query }),
-        }).catch((err) => {
-          console.error('Failed to save history:', err);
+        // Get auth token if user is logged in
+        const getAuthHeaders = async () => {
+          const headers = { 'Content-Type': 'application/json' };
+          if (supabase && user) {
+            try {
+              const { data: { session } } = await supabase.auth.getSession();
+              if (session?.access_token) {
+                headers['Authorization'] = `Bearer ${session.access_token}`;
+              }
+            } catch (err) {
+              console.error('Error getting session:', err);
+            }
+          }
+          return headers;
+        };
+
+        getAuthHeaders().then((headers) => {
+          fetch('/api/history', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ query }),
+          }).catch((err) => {
+            console.error('Failed to save history:', err);
+          });
         });
       }
     } catch (err) {
@@ -106,13 +127,19 @@ export default function Home() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Header */}
-        <header className="text-center mb-8">
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-2">
-            EcoBites
-          </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-400">
-            Track the sustainability and nutrition of your food products
-          </p>
+        <header className="mb-8">
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex-1"></div>
+            <UserMenu />
+          </div>
+          <div className="text-center">
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-2">
+              EcoBites
+            </h1>
+            <p className="text-lg text-gray-600 dark:text-gray-400">
+              Track the sustainability and nutrition of your food products
+            </p>
+          </div>
         </header>
 
         {/* Search Bar */}
